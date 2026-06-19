@@ -30,6 +30,14 @@ export function svgRectFromBBox(
   };
 }
 
+export function svgToWorldMeters(view: View, sx: number, sy: number): [number, number] {
+  const [xmin, , , ymax] = view.world;
+  const s = scale(view);
+  const xUnits = xmin + sx / s;
+  const yUnits = ymax - sy / s; // Y flip
+  return [xUnits * view.meters_per_unit, yUnits * view.meters_per_unit];
+}
+
 export function svgDeltaToMeters(
   view: View,
   dxSvg: number,

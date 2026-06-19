@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { worldToSvg, svgRectFromBBox, svgDeltaToMeters, type View } from "../lib/viewmap";
+import { worldToSvg, svgRectFromBBox, svgDeltaToMeters, svgToWorldMeters, type View } from "../lib/viewmap";
 
 // 10 x 8 world (meters), viewBox 1,000,000 x 800,000, scale s = 100000
 const view: View = {
@@ -33,4 +33,18 @@ it("svgDeltaToMeters honors meters_per_unit (mm)", () => {
     meters_per_unit: 0.001,
   };
   expect(svgDeltaToMeters(mm, 100_000, 0)[0]).toBeCloseTo(1, 6);
+});
+
+it("svgToWorldMeters inverts worldToSvg", () => {
+  // svg (0, 0) -> world top-left (0, 8) meters; svg (1e6, 8e5) -> (10, 0)
+  expect(svgToWorldMeters(view, 0, 0)).toEqual([0, 8]);
+  expect(svgToWorldMeters(view, 1_000_000, 800_000)).toEqual([10, 0]);
+});
+
+it("svgToWorldMeters honors meters_per_unit (mm)", () => {
+  const mm: View = { world: [0, 0, 10000, 8000], viewBox: [0, 0, 1_000_000, 800_000], meters_per_unit: 0.001 };
+  // s = 100 svg/unit; svg x=1e6 -> 10000 units -> 10 m
+  const [x, y] = svgToWorldMeters(mm, 1_000_000, 0);
+  expect(x).toBeCloseTo(10, 6);
+  expect(y).toBeCloseTo(8, 6); // svg y=0 -> world top (8000 units -> 8 m)
 });
