@@ -137,6 +137,20 @@ TOOL_SCHEMAS = [
             "required": ["handle", "layer"],
         },
     },
+    {
+        "name": "set_entrance",
+        "description": (
+            "Record which wall/edge the store ENTRANCE is on, when the user tells "
+            "you the orientation (e.g. 'the entrance is on the left'). Use the DRAWING "
+            "FRAME's edge names. side is one of: north/top, south/bottom, east/right, "
+            "west/left. This re-orients front/back/left/right for the rest of the session."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"side": {"type": "string"}},
+            "required": ["side"],
+        },
+    },
 ]
 
 
@@ -199,6 +213,9 @@ def dispatch(doc: Drawing, name: str, args: dict) -> dict:
         if name == "rotate_entity":
             c = edits.rotate_entity(doc, args["handle"], float(args["angle_deg"]))
             return {"result": None, "change": c, "error": None}
+        if name == "set_entrance":
+            return {"result": {"set_entrance": str(args["side"])},
+                    "change": None, "error": None}
         return {"result": None, "change": None, "error": f"Unknown tool {name}"}
     except (edits.EntityNotFound, edits.ComponentNotFound) as e:
         return {"result": None, "change": None, "error": str(e)}

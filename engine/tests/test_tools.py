@@ -87,3 +87,15 @@ def test_dispatch_rotate(sample_doc):
 def test_dispatch_place_unknown_component(sample_doc):
     out = dispatch(sample_doc["doc"], "place_component", {"name": "ghost", "x_m": 0, "y_m": 0})
     assert out["error"]
+
+
+def test_set_entrance_in_schemas():
+    names = {t["name"] for t in TOOL_SCHEMAS}
+    assert "set_entrance" in names
+
+
+def test_dispatch_set_entrance(sample_doc):
+    out = dispatch(sample_doc["doc"], "set_entrance", {"side": "north"})
+    assert out["error"] is None
+    assert out["change"] is None
+    assert out["result"] == {"set_entrance": "north"}
