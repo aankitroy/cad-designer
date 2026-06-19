@@ -196,3 +196,34 @@ def test_chat_persists_entrance_override(sample_bytes, monkeypatch):
     monkeypatch.setattr(main, "run_agent", fake_run_agent2)
     client.post(f"/sessions/{sid}/chat", data={"message": "now where is the front?"})
     assert "front=max_y" in (captured["frame_text"] or "")
+
+
+def test_selectables_lists_added_excludes_base(sample_bytes, monkeypatch):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+
+    # base-shell WALLS polyline (present before any session edit) must stay locked
+    base_wall = next(
+        e.dxf.handle for e in main.store.get(sid).modelspace() if e.dxf.layer == "WALLS"
+    )
+
+    def fake_run_agent(**kwargs):
+        from app import edits
+
+        c = edits.add_wall(kwargs["doc"], 0, 0, 3, 0, layer="NEW")
+        return {"reply": "added", "changes": [c], "entrance": None}
+
+    monkeypatch.setattr(main, "run_agent", fake_run_agent)
+    monkeypatch.setattr(main, "_anthropic_client", lambda: object())
+    r = client.post(f"/sessions/{sid}/chat", data={"message": "add a wall"})
+    added_handle = r.json()["changes"][0]["handle"]
+
+    s = client.get(f"/sessions/{sid}/selectables")
+    assert s.status_code == 200
+    body = s.json()
+    handles = {e["handle"] for e in body["selectables"]}
+    assert added_handle in handles
+    assert base_wall not in handles  # base shell is locked
+    assert body["view"] is not None
+    one = next(e for e in body["selectables"] if e["handle"] == added_handle)
+    assert len(one["bbox"]) == 4 and "label" in one
