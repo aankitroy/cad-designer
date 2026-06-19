@@ -36,3 +36,16 @@ def sample_bytes(sample_doc):
     buf = io.StringIO()
     sample_doc["doc"].write(buf)
     return buf.getvalue().encode("utf-8")
+
+
+@pytest.fixture
+def component_bytes():
+    """A small 'chair' component DXF in millimeters (500x500 box + a back line)."""
+    doc = ezdxf.new("R2010")
+    doc.header["$INSUNITS"] = 4  # mm
+    msp = doc.modelspace()
+    msp.add_lwpolyline([(0, 0), (500, 0), (500, 500), (0, 500), (0, 0)])
+    msp.add_line((100, 500), (400, 500))
+    buf = io.StringIO()
+    doc.write(buf)
+    return buf.getvalue().encode("utf-8")
