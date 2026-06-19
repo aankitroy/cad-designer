@@ -53,3 +53,24 @@ def test_agent_executes_tool_then_finishes(sample_doc):
     assert out["changes"][0]["op"] == "move_entity"
     line = sample_doc["doc"].entitydb[h]
     assert abs(line.dxf.start.x - 0.0) < 1e-6  # was 2.0, moved -2
+
+
+def test_agent_includes_component_context(sample_doc):
+    captured = {}
+
+    class CapturingMessages:
+        def create(self, **kwargs):
+            captured["messages"] = kwargs["messages"]
+            return FakeResponse("end_turn", [FakeBlock(type="text", text="ok")])
+
+    class CapturingClient:
+        messages = CapturingMessages()
+
+    run_agent(
+        client=CapturingClient(),
+        doc=sample_doc["doc"],
+        user_message="place it by the door",
+        components=["chair"],
+    )
+    first = captured["messages"][0]["content"]
+    assert "chair" in first

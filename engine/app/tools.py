@@ -54,6 +54,38 @@ TOOL_SCHEMAS = [
         },
     },
     {
+        "name": "place_component",
+        "description": (
+            "Place a previously-attached component (a block, by name) into the drawing "
+            "at a point in meters. Use list_layers/query_entities to locate a reference "
+            "point first (e.g. near the door). rotation_deg rotates the placement; scale "
+            "multiplies its size (1.0 = real size)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "component/block name"},
+                "x_m": {"type": "number"},
+                "y_m": {"type": "number"},
+                "rotation_deg": {"type": "number"},
+                "scale": {"type": "number"},
+            },
+            "required": ["name", "x_m", "y_m"],
+        },
+    },
+    {
+        "name": "rotate_entity",
+        "description": "Rotate an entity (e.g. a placed component) by angle_deg degrees.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "handle": {"type": "string"},
+                "angle_deg": {"type": "number"},
+            },
+            "required": ["handle", "angle_deg"],
+        },
+    },
+    {
         "name": "create_layer",
         "description": (
             "Create a new layer (or confirm one exists) so additions can be organized "
@@ -157,8 +189,18 @@ def dispatch(doc: Drawing, name: str, args: dict) -> dict:
         if name == "create_layer":
             c = edits.create_layer(doc, args["name"], int(args.get("color", 7)))
             return {"result": None, "change": c, "error": None}
+        if name == "place_component":
+            c = edits.place_component(
+                doc, args["name"], m(args["x_m"]), m(args["y_m"]),
+                rotation_deg=float(args.get("rotation_deg", 0.0)),
+                scale=float(args.get("scale", 1.0)),
+            )
+            return {"result": None, "change": c, "error": None}
+        if name == "rotate_entity":
+            c = edits.rotate_entity(doc, args["handle"], float(args["angle_deg"]))
+            return {"result": None, "change": c, "error": None}
         return {"result": None, "change": None, "error": f"Unknown tool {name}"}
-    except edits.EntityNotFound as e:
+    except (edits.EntityNotFound, edits.ComponentNotFound) as e:
         return {"result": None, "change": None, "error": str(e)}
     except (KeyError, ValueError) as e:
         return {"result": None, "change": None, "error": f"Bad args for {name}: {e}"}

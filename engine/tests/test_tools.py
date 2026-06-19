@@ -46,3 +46,44 @@ def test_create_layer_in_schemas():
 def test_dispatch_unknown_tool(sample_doc):
     out = dispatch(sample_doc["doc"], "frobnicate", {})
     assert out["error"]
+
+
+def test_place_and_rotate_in_schemas():
+    names = {t["name"] for t in TOOL_SCHEMAS}
+    assert {"place_component", "rotate_entity"} <= names
+
+
+def test_dispatch_place_component_converts_meters(sample_doc):
+    import io
+
+    import ezdxf
+
+    from app.components import import_as_block
+
+    doc = sample_doc["doc"]  # meters
+    cdoc = ezdxf.new("R2010")
+    cdoc.header["$INSUNITS"] = 6
+    cdoc.modelspace().add_line((0, 0), (1, 0))
+    buf = io.StringIO()
+    cdoc.write(buf)
+    name = import_as_block(doc, buf.getvalue().encode(), "c.dxf")
+
+    out = dispatch(
+        doc, "place_component", {"name": name, "x_m": 3.0, "y_m": 0.0, "rotation_deg": 0}
+    )
+    assert out["change"]["op"] == "place_component"
+    ins = doc.entitydb[out["change"]["handle"]]
+    assert abs(ins.dxf.insert.x - 3.0) < 1e-6  # meters base -> 3 units
+
+
+def test_dispatch_rotate(sample_doc):
+    out = dispatch(
+        sample_doc["doc"], "rotate_entity",
+        {"handle": sample_doc["line_handle"], "angle_deg": 30},
+    )
+    assert out["change"]["op"] == "rotate_entity"
+
+
+def test_dispatch_place_unknown_component(sample_doc):
+    out = dispatch(sample_doc["doc"], "place_component", {"name": "ghost", "x_m": 0, "y_m": 0})
+    assert out["error"]

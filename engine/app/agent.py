@@ -32,9 +32,19 @@ def _block_to_dict(b) -> dict:
 
 
 def run_agent(
-    client, doc: Drawing, user_message: str, model: str = "claude-sonnet-4-6"
+    client,
+    doc: Drawing,
+    user_message: str,
+    model: str = "claude-sonnet-4-6",
+    components: list[str] | None = None,
 ) -> dict:
-    messages = [{"role": "user", "content": user_message}]
+    intro = user_message
+    if components:
+        intro = (
+            f"[Available components you can place with place_component: "
+            f"{', '.join(components)}]\n{user_message}"
+        )
+    messages = [{"role": "user", "content": intro}]
     changes: list[dict] = []
     reply = ""
 
