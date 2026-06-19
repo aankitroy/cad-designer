@@ -167,3 +167,22 @@ def compute_frame(doc: Drawing, orientation_override: str | None = None) -> dict
         },
         "anchors_m": anchors,
     }
+
+
+def frame_to_text(frame: dict) -> str:
+    if frame.get("bounds_m") is None:
+        return f"DRAWING FRAME: {frame.get('note', 'no geometry')}."
+    b = frame["bounds_m"]
+    o = frame["orientation"]
+    lines = [
+        f"Drawing is {b['width']:.1f} m wide x {b['depth']:.1f} m deep "
+        f"(~{frame['area_sqft']:.0f} sqft). Coordinates are meters; "
+        f"x in [{b['min_x']:.1f}, {b['max_x']:.1f}], "
+        f"y in [{b['min_y']:.1f}, {b['max_y']:.1f}].",
+        f"Orientation ({o['source']}): front={o['front']}, back={o['back']}, "
+        f"left={o['left']}, right={o['right']} (front->back axis: {o['axis']}).",
+        "Anchor points (meters):",
+    ]
+    for name, xy in frame["anchors_m"].items():
+        lines.append(f"  {name}: ({xy[0]:.1f}, {xy[1]:.1f})")
+    return "\n".join(lines)

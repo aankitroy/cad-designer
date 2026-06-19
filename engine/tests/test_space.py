@@ -80,3 +80,18 @@ def test_frame_empty_geometry():
     f = compute_frame(ezdxf.new("R2010"))
     assert f["bounds_m"] is None
     assert "note" in f
+
+
+from app.space import frame_to_text
+
+
+def test_frame_to_text_includes_bounds_and_anchors(sample_doc):
+    txt = frame_to_text(compute_frame(sample_doc["doc"]))
+    assert "10.0" in txt and "8.0" in txt          # width / depth
+    assert "back_center" in txt
+    assert "assumed" in txt                          # orientation source surfaced
+
+
+def test_frame_to_text_empty():
+    txt = frame_to_text(compute_frame(ezdxf.new("R2010")))
+    assert "no renderable geometry" in txt
