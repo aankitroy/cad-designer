@@ -76,3 +76,27 @@ it("manualEdit posts name+args as json", async () => {
   expect(call[0]).toContain("/sessions/s1/edit");
   expect(JSON.parse(call[1].body)).toEqual({ name: "move_entity", args: { handle: "A", dx_m: 1, dy_m: 0 } });
 });
+
+it("getLibrary returns the component list", async () => {
+  const body = { components: [{ id: "chair", name: "CHAIR UNIT" }] };
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
+  const { getLibrary } = await import("../lib/api");
+  const res = await getLibrary();
+  expect(res.components[0].id).toBe("chair");
+});
+
+it("thumbnailUrl builds the right path", async () => {
+  const { thumbnailUrl } = await import("../lib/api");
+  expect(thumbnailUrl("chair")).toContain("/library/chair/thumbnail.svg");
+});
+
+it("placeFromLibrary posts id + coords", async () => {
+  const body = { change: { op: "place_component" }, svg: "<svg/>", view: null, layers: [], selectables: [] };
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
+  const { placeFromLibrary } = await import("../lib/api");
+  const res = await placeFromLibrary("s1", "chair", 5, 4);
+  expect(res.change.op).toBe("place_component");
+  const call = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+  expect(call[0]).toContain("/sessions/s1/library/place");
+  expect(JSON.parse(call[1].body)).toMatchObject({ id: "chair", x_m: 5, y_m: 4 });
+});

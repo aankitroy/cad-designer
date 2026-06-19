@@ -105,3 +105,30 @@ export async function setUnits(sid: string, unitsName: string): Promise<{ units:
 export function downloadUrl(sid: string): string {
   return `${BASE}/sessions/${sid}/dxf`;
 }
+
+export type LibraryItem = { id: string; name: string };
+
+export async function getLibrary(): Promise<{ components: LibraryItem[] }> {
+  return asJson(await fetch(`${BASE}/library`));
+}
+
+export function thumbnailUrl(id: string): string {
+  return `${BASE}/library/${id}/thumbnail.svg`;
+}
+
+export async function placeFromLibrary(
+  sid: string,
+  id: string,
+  x_m: number,
+  y_m: number,
+  rotation_deg?: number,
+  layer?: string,
+): Promise<EditResult> {
+  return asJson<EditResult>(
+    await fetch(`${BASE}/sessions/${sid}/library/place`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, x_m, y_m, rotation_deg, layer }),
+    }),
+  );
+}
