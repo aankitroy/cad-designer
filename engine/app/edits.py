@@ -1,0 +1,93 @@
+from ezdxf.document import Drawing
+
+
+class EntityNotFound(Exception):
+    pass
+
+
+def _get(doc: Drawing, handle: str):
+    e = doc.entitydb.get(handle)
+    if e is None or not e.is_alive:
+        raise EntityNotFound(f"No entity with handle {handle}")
+    return e
+
+
+def _summarize_point(e):
+    try:
+        if e.dxftype() == "LINE":
+            return [e.dxf.start.x, e.dxf.start.y]
+        if e.dxftype() in ("TEXT", "INSERT"):
+            return [e.dxf.insert.x, e.dxf.insert.y]
+        if e.dxftype() == "CIRCLE":
+            return [e.dxf.center.x, e.dxf.center.y]
+    except Exception:
+        return None
+    return None
+
+
+def move_entity(doc: Drawing, handle: str, dx: float, dy: float) -> dict:
+    e = _get(doc, handle)
+    before = _summarize_point(e)
+    e.translate(dx, dy, 0)
+    return {
+        "op": "move_entity",
+        "handle": handle,
+        "before": before,
+        "after": _summarize_point(e),
+        "summary": f"Moved {e.dxftype()} by ({dx}, {dy})",
+    }
+
+
+def delete_entity(doc: Drawing, handle: str) -> dict:
+    e = _get(doc, handle)
+    etype = e.dxftype()
+    doc.modelspace().delete_entity(e)
+    return {
+        "op": "delete_entity",
+        "handle": handle,
+        "before": etype,
+        "after": None,
+        "summary": f"Deleted {etype}",
+    }
+
+
+def add_text_label(
+    doc: Drawing, x: float, y: float, text: str, layer: str = "TEXT", height: float = 0.3
+) -> dict:
+    msp = doc.modelspace()
+    t = msp.add_text(text, dxfattribs={"layer": layer, "height": height})
+    t.set_placement((x, y))
+    return {
+        "op": "add_text_label",
+        "handle": t.dxf.handle,
+        "before": None,
+        "after": text,
+        "summary": f"Added label '{text}' at ({x}, {y})",
+    }
+
+
+def add_wall(
+    doc: Drawing, x1: float, y1: float, x2: float, y2: float, layer: str = "WALLS"
+) -> dict:
+    msp = doc.modelspace()
+    p = msp.add_lwpolyline([(x1, y1), (x2, y2)], dxfattribs={"layer": layer})
+    return {
+        "op": "add_wall",
+        "handle": p.dxf.handle,
+        "before": None,
+        "after": [(x1, y1), (x2, y2)],
+        "summary": f"Added wall ({x1},{y1})->({x2},{y2})",
+    }
+
+
+def set_layer(doc: Drawing, handle: str, layer: str) -> dict:
+    e = _get(doc, handle)
+    before = e.dxf.layer
+    e.dxf.layer = layer
+    return {
+        "op": "set_layer",
+        "handle": handle,
+        "before": before,
+        "after": layer,
+        "summary": f"Moved {e.dxftype()} to layer {layer}",
+    }
