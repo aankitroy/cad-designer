@@ -631,6 +631,32 @@ button:disabled {
   border-color: var(--accent);
 }
 
+.edit-overlay {
+  pointer-events: none;
+  overflow: visible;
+}
+.sel-box {
+  pointer-events: all;
+  fill: transparent;
+  stroke: var(--accent);
+  stroke-width: 2000; /* viewBox units (~1e6 space) -> thin on screen */
+  stroke-dasharray: 6000 6000;
+  cursor: move;
+  opacity: 0.35;
+}
+.sel-box:hover {
+  opacity: 0.7;
+}
+.sel-box-active {
+  opacity: 1;
+  stroke-dasharray: none;
+}
+.rotate-handle {
+  pointer-events: all;
+  fill: var(--accent);
+  cursor: grab;
+}
+
 .error-banner {
   display: flex;
   align-items: center;
