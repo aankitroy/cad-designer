@@ -1,6 +1,11 @@
 import os
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
+
+# Load engine/.env (e.g. ANTHROPIC_API_KEY) before anything reads the environment.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
