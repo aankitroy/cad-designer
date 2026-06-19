@@ -46,13 +46,14 @@ export default function Home() {
     }
   }
 
-  async function handleSend(msg: string) {
+  async function handleSend(msg: string, file?: File) {
     if (!sid) return;
-    setMessages((m) => [...m, { role: "user", text: msg }]);
+    const label = file ? `${msg || "Place this"}  📎 ${file.name}` : msg;
+    setMessages((m) => [...m, { role: "user", text: label }]);
     setBusy(true);
     setError(null);
     try {
-      const res = await sendChat(sid, msg);
+      const res = await sendChat(sid, msg, file);
       setSvg(res.svg);
       setLayers(res.layers);
       setMessages((m) => [...m, { role: "assistant", text: res.reply }]);
