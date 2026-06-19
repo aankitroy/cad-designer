@@ -28,13 +28,16 @@ export async function uploadDxf(file: File): Promise<UploadResult> {
   );
 }
 
-export async function sendChat(sid: string, message: string): Promise<ChatResult> {
+export async function sendChat(
+  sid: string,
+  message: string,
+  file?: File,
+): Promise<ChatResult> {
+  const fd = new FormData();
+  fd.append("message", message);
+  if (file) fd.append("file", file);
   return asJson<ChatResult>(
-    await fetch(`${BASE}/sessions/${sid}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
-    }),
+    await fetch(`${BASE}/sessions/${sid}/chat`, { method: "POST", body: fd }),
   );
 }
 

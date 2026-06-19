@@ -32,6 +32,23 @@ it("setUnits posts the chosen units", async () => {
   expect(JSON.parse(call[1].body)).toEqual({ units: "mm" });
 });
 
+it("sendChat sends multipart when a file is attached", async () => {
+  const body = { reply: "ok", changes: [], svg: "<svg/>", layers: [] };
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
+  const file = new File(["x"], "chair.dxf");
+  await sendChat("s1", "place it", file);
+  const call = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+  expect(call[1].body).toBeInstanceOf(FormData);
+});
+
+it("sendChat sends form fields without a file too", async () => {
+  const body = { reply: "ok", changes: [], svg: "<svg/>", layers: [] };
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
+  await sendChat("s1", "hello");
+  const call = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+  expect(call[1].body).toBeInstanceOf(FormData);
+});
+
 it("throws on non-ok", async () => {
   global.fetch = vi
     .fn()
