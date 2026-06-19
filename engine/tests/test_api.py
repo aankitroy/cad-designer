@@ -157,3 +157,42 @@ def test_download_dxf(sample_bytes):
     r = client.get(f"/sessions/{sid}/dxf")
     assert r.status_code == 200
     assert b"SECTION" in r.content  # DXF marker
+
+
+def test_chat_passes_frame_text_to_agent(sample_bytes, monkeypatch):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    seen = {}
+
+    def fake_run_agent(**kwargs):
+        seen["frame_text"] = kwargs.get("frame_text")
+        return {"reply": "ok", "changes": [], "entrance": None}
+
+    monkeypatch.setattr(main, "run_agent", fake_run_agent)
+    monkeypatch.setattr(main, "_anthropic_client", lambda: object())
+    r = client.post(f"/sessions/{sid}/chat", data={"message": "where is the back?"})
+    assert r.status_code == 200
+    assert "back_center" in (seen["frame_text"] or "")
+
+
+def test_chat_persists_entrance_override(sample_bytes, monkeypatch):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+
+    def fake_run_agent(**kwargs):
+        return {"reply": "set", "changes": [], "entrance": "north"}
+
+    monkeypatch.setattr(main, "run_agent", fake_run_agent)
+    monkeypatch.setattr(main, "_anthropic_client", lambda: object())
+    client.post(f"/sessions/{sid}/chat", data={"message": "entrance is at the top"})
+    assert main._orientation.get(sid) == "north"
+
+    captured = {}
+
+    def fake_run_agent2(**kwargs):
+        captured["frame_text"] = kwargs.get("frame_text")
+        return {"reply": "ok", "changes": [], "entrance": None}
+
+    monkeypatch.setattr(main, "run_agent", fake_run_agent2)
+    client.post(f"/sessions/{sid}/chat", data={"message": "now where is the front?"})
+    assert "front=max_y" in (captured["frame_text"] or "")

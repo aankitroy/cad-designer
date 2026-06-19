@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from app import components, units
+from app import components, space, units
 from app.agent import run_agent
 from app.query import list_layers
 from app.render import render_svg
@@ -29,6 +29,9 @@ MODEL = os.environ.get("CAD_MODEL", "claude-sonnet-4-6")
 
 # session_id -> list of imported component (block) names
 _components: dict[str, list[str]] = {}
+
+# session_id -> orientation override edge (e.g. "north")
+_orientation: dict[str, str] = {}
 
 
 def _anthropic_client():
@@ -85,6 +88,9 @@ async def chat(
             raise HTTPException(status_code=422, detail=str(e))
         _components.setdefault(sid, []).append(name)
 
+    frame = space.compute_frame(doc, _orientation.get(sid))
+    frame_text = space.frame_to_text(frame)
+
     store.snapshot(sid)
     out = run_agent(
         client=_anthropic_client(),
@@ -92,7 +98,10 @@ async def chat(
         user_message=message,
         model=MODEL,
         components=_components.get(sid, []),
+        frame_text=frame_text,
     )
+    if out.get("entrance"):
+        _orientation[sid] = out["entrance"]
     if not out["changes"]:
         store.undo(sid)  # discard the no-op snapshot
     current = store.get(sid)
