@@ -74,3 +74,41 @@ def test_agent_includes_component_context(sample_doc):
     )
     first = captured["messages"][0]["content"]
     assert "chair" in first
+
+
+def test_agent_includes_frame_text(sample_doc):
+    captured = {}
+
+    class CapturingMessages:
+        def create(self, **kwargs):
+            captured["messages"] = kwargs["messages"]
+            return FakeResponse("end_turn", [FakeBlock(type="text", text="ok")])
+
+    class CapturingClient:
+        messages = CapturingMessages()
+
+    run_agent(
+        client=CapturingClient(),
+        doc=sample_doc["doc"],
+        user_message="put it at the back",
+        frame_text="DRAWING FRAME: back_center (5.0, 8.0)",
+    )
+    first = captured["messages"][0]["content"]
+    assert "back_center" in first
+    assert "put it at the back" in first
+
+
+def test_agent_surfaces_set_entrance(sample_doc):
+    scripted = [
+        FakeResponse("tool_use", [
+            FakeBlock(type="tool_use", id="t1", name="set_entrance",
+                      input={"side": "west"}),
+        ]),
+        FakeResponse("end_turn", [FakeBlock(type="text", text="Got it.")]),
+    ]
+    out = run_agent(
+        client=FakeClient(scripted),
+        doc=sample_doc["doc"],
+        user_message="entrance is on the left",
+    )
+    assert out["entrance"] == "west"

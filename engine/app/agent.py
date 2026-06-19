@@ -37,15 +37,21 @@ def run_agent(
     user_message: str,
     model: str = "claude-sonnet-4-6",
     components: list[str] | None = None,
+    frame_text: str | None = None,
 ) -> dict:
-    intro = user_message
+    parts = []
+    if frame_text:
+        parts.append(f"[DRAWING FRAME]\n{frame_text}")
     if components:
-        intro = (
+        parts.append(
             f"[Available components you can place with place_component: "
-            f"{', '.join(components)}]\n{user_message}"
+            f"{', '.join(components)}]"
         )
+    parts.append(user_message)
+    intro = "\n".join(parts)
     messages = [{"role": "user", "content": intro}]
     changes: list[dict] = []
+    entrance: str | None = None
     reply = ""
 
     for _ in range(MAX_TURNS):
@@ -69,6 +75,8 @@ def run_agent(
             if getattr(b, "type", None) != "tool_use":
                 continue
             out = dispatch(doc, b.name, b.input)
+            if isinstance(out.get("result"), dict) and "set_entrance" in out["result"]:
+                entrance = out["result"]["set_entrance"]
             if out["change"]:
                 changes.append(out["change"])
             payload = out["error"] or out["change"] or out["result"]
@@ -82,4 +90,4 @@ def run_agent(
             )
         messages.append({"role": "user", "content": tool_results})
 
-    return {"reply": reply, "changes": changes}
+    return {"reply": reply, "changes": changes, "entrance": entrance}
