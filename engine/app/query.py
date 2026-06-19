@@ -77,6 +77,7 @@ def query_entities(
                 "type": e.dxftype(),
                 "layer": e_layer,
                 "text": text,
+                "block": e.dxf.name if e.dxftype() == "INSERT" else None,
                 "point": pt,
             }
         )

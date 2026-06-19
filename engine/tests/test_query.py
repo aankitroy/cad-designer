@@ -22,3 +22,24 @@ def test_query_returns_handles_and_types(sample_doc):
     results = query_entities(sample_doc["doc"])
     sample = results[0]
     assert "handle" in sample and "type" in sample and "layer" in sample
+
+
+def test_query_reports_block_name_for_inserts():
+    import io
+
+    import ezdxf
+
+    from app.components import import_as_block
+
+    doc = ezdxf.new("R2010")
+    doc.header["$INSUNITS"] = 6
+    cdoc = ezdxf.new("R2010")
+    cdoc.header["$INSUNITS"] = 6
+    cdoc.modelspace().add_line((0, 0), (1, 0))
+    buf = io.StringIO()
+    cdoc.write(buf)
+    name = import_as_block(doc, buf.getvalue().encode(), "sofa.dxf")
+    doc.modelspace().add_blockref(name, (0, 0))
+
+    results = query_entities(doc, type="INSERT")
+    assert any(r.get("block") == name for r in results)
