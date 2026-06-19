@@ -207,6 +207,18 @@ button:disabled {
   height: 100% !important;
 }
 
+/* The drawing lives in a ~1,000,000-unit space, so its 4–19 unit stroke widths
+   collapse to sub-pixel (invisible) when fit to the canvas. non-scaling-stroke
+   renders strokes at a constant device width regardless of the viewBox scale, so
+   walls and outlines stay crisp at every zoom level. */
+.canvas-stage svg path,
+.canvas-stage svg line,
+.canvas-stage svg polyline,
+.canvas-stage svg circle {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.25px;
+}
+
 .zoom-hint {
   position: absolute;
   bottom: 14px;
