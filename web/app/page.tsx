@@ -11,8 +11,12 @@ import {
   undo,
   setUnits,
   downloadUrl,
+  getSelectables,
+  manualEdit,
   type Change,
   type Layer,
+  type View,
+  type Selectable,
 } from "../lib/api";
 
 export default function Home() {
@@ -26,6 +30,19 @@ export default function Home() {
   const [changes, setChanges] = useState<Change[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<View | null>(null);
+  const [selectables, setSelectables] = useState<Selectable[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  async function refreshSelectables(id: string) {
+    try {
+      const r = await getSelectables(id);
+      setSelectables(r.selectables);
+      setView(r.view);
+    } catch {
+      /* non-fatal */
+    }
+  }
 
   async function handleUpload(file: File) {
     setError(null);
@@ -33,6 +50,8 @@ export default function Home() {
       const res = await uploadDxf(file);
       setSid(res.session_id);
       setSvg(res.svg);
+      setView(res.view ?? null);
+      setSelected(null);
       setFileName(file.name);
       setLayers(res.summary.layers);
       setUnitsState(res.summary.units);
@@ -41,6 +60,7 @@ export default function Home() {
         { role: "assistant", text: "Floor plan loaded. What would you like to change?" },
       ]);
       setChanges([]);
+      await refreshSelectables(res.session_id);
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e));
     }
@@ -55,13 +75,31 @@ export default function Home() {
     try {
       const res = await sendChat(sid, msg, file);
       setSvg(res.svg);
+      setView(res.view ?? view);
       setLayers(res.layers);
       setMessages((m) => [...m, { role: "assistant", text: res.reply }]);
       setChanges((c) => [...c, ...res.changes]);
+      await refreshSelectables(sid);
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleEdit(name: string, args: Record<string, unknown>) {
+    if (!sid) return;
+    try {
+      const res = await manualEdit(sid, name, args);
+      setSvg(res.svg);
+      setView(res.view);
+      setLayers(res.layers);
+      setSelectables(res.selectables);
+      setChanges((c) => [...c, res.change]);
+      if (name === "delete_entity") setSelected(null);
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e));
+      await refreshSelectables(sid);
     }
   }
 
@@ -81,8 +119,10 @@ export default function Home() {
     try {
       const res = await undo(sid);
       setSvg(res.svg);
+      setView(res.view ?? null);
       setLayers(res.layers);
       setChanges((c) => c.slice(0, -1));
+      await refreshSelectables(sid);
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e));
     }
@@ -142,7 +182,14 @@ export default function Home() {
 
       <div className="workspace">
         <div className="canvas-wrap">
-          <SvgViewer svg={svg} />
+          <SvgViewer
+            svg={svg}
+            view={view}
+            selectables={selectables}
+            selected={selected}
+            onSelect={setSelected}
+            onEdit={handleEdit}
+          />
         </div>
 
         <aside className="sidebar">
