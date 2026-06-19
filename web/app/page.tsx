@@ -1,66 +1,76 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { useState } from "react";
+import { Uploader } from "../components/Uploader";
+import { SvgViewer } from "../components/SvgViewer";
+import { ChatPanel, type Msg } from "../components/ChatPanel";
+import { ChangeLog } from "../components/ChangeLog";
+import { uploadDxf, sendChat, undo, downloadUrl, type Change } from "../lib/api";
 
 export default function Home() {
+  const [sid, setSid] = useState<string | null>(null);
+  const [svg, setSvg] = useState("");
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [changes, setChanges] = useState<Change[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleUpload(file: File) {
+    setError(null);
+    try {
+      const res = await uploadDxf(file);
+      setSid(res.session_id);
+      setSvg(res.svg);
+      setMessages([
+        { role: "assistant", text: "Floor plan loaded. What should I change?" },
+      ]);
+      setChanges([]);
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+
+  async function handleSend(msg: string) {
+    if (!sid) return;
+    setMessages((m) => [...m, { role: "user", text: msg }]);
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await sendChat(sid, msg);
+      setSvg(res.svg);
+      setMessages((m) => [...m, { role: "assistant", text: res.reply }]);
+      setChanges((c) => [...c, ...res.changes]);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUndo() {
+    if (!sid) return;
+    const res = await undo(sid);
+    setSvg(res.svg);
+    setChanges((c) => c.slice(0, -1));
+  }
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main
+      style={{ display: "grid", gridTemplateColumns: "1fr 380px", height: "100vh" }}
+    >
+      <section style={{ borderRight: "1px solid #eee", overflow: "hidden" }}>
+        <div style={{ padding: 12, display: "flex", gap: 16, alignItems: "center" }}>
+          <Uploader onUpload={handleUpload} />
+          {sid && <a href={downloadUrl(sid)}>Download DXF</a>}
+          {error && <span style={{ color: "crimson" }}>{error}</span>}
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div style={{ height: "calc(100vh - 56px)" }}>
+          <SvgViewer svg={svg} />
         </div>
-      </main>
-    </div>
+      </section>
+      <aside style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <ChatPanel messages={messages} onSend={handleSend} busy={busy} />
+        <ChangeLog changes={changes} onUndo={handleUndo} />
+      </aside>
+    </main>
   );
 }
