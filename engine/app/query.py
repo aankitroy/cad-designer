@@ -1,11 +1,20 @@
 from ezdxf.document import Drawing
 
 
+def _layer_of(e) -> str | None:
+    """Layer name, or None for non-graphical entities that lack the attribute."""
+    if e.dxf.hasattr("layer"):
+        return e.dxf.layer
+    return None
+
+
 def list_layers(doc: Drawing) -> list[dict]:
     msp = doc.modelspace()
     counts: dict[str, int] = {}
     for e in msp:
-        counts[e.dxf.layer] = counts.get(e.dxf.layer, 0) + 1
+        layer = _layer_of(e)
+        if layer is not None:
+            counts[layer] = counts.get(layer, 0) + 1
     return [
         {"name": layer.dxf.name, "entity_count": counts.get(layer.dxf.name, 0)}
         for layer in doc.layers
@@ -47,7 +56,10 @@ def query_entities(
     msp = doc.modelspace()
     out: list[dict] = []
     for e in msp:
-        if layer and e.dxf.layer != layer:
+        e_layer = _layer_of(e)
+        if e_layer is None:
+            continue  # skip non-graphical entities
+        if layer and e_layer != layer:
             continue
         if type and e.dxftype() != type.upper():
             continue
@@ -63,7 +75,7 @@ def query_entities(
             {
                 "handle": e.dxf.handle,
                 "type": e.dxftype(),
-                "layer": e.dxf.layer,
+                "layer": e_layer,
                 "text": text,
                 "point": pt,
             }

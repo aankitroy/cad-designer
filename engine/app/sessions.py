@@ -2,7 +2,15 @@ import io
 import uuid
 
 import ezdxf
+from ezdxf import recover
 from ezdxf.document import Drawing
+
+
+def _read_dxf(dxf_bytes: bytes) -> Drawing:
+    """Load DXF from bytes using recover mode, which tolerates the structural
+    quirks common in files exported by other CAD tools (non-unique handles, etc.)."""
+    doc, _auditor = recover.read(io.BytesIO(dxf_bytes))
+    return doc
 
 
 class SessionStore:
@@ -12,8 +20,8 @@ class SessionStore:
 
     def create(self, dxf_bytes: bytes) -> str:
         try:
-            doc = ezdxf.read(io.StringIO(dxf_bytes.decode("utf-8", errors="replace")))
-        except Exception as e:  # ezdxf.DXFStructureError and friends
+            doc = _read_dxf(dxf_bytes)
+        except Exception as e:  # DXFStructureError and friends
             raise ValueError(f"Not a valid DXF file: {e}") from e
         sid = uuid.uuid4().hex
         self._docs[sid] = doc
