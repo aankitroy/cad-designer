@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from app import components, space, tools, units
+from app import components, edits, library, space, tools, units
 from app import view as view_mod
 from app.agent import run_agent
 from app.query import list_layers
@@ -38,6 +38,12 @@ _orientation: dict[str, str] = {}
 _editable: dict[str, set[str]] = {}
 
 _ADD_OPS = {"place_component", "add_text_label", "add_wall"}
+
+# (path, mtime) -> rendered thumbnail SVG
+_thumb_cache: dict[tuple[str, float], str] = {}
+
+# session_id -> {library id: imported block name}
+_library_blocks: dict[str, dict[str, str]] = {}
 
 
 def _record_changes(sid: str, changes: list[dict]) -> None:
@@ -102,6 +108,31 @@ _MANUAL_OPS = {"move_entity", "rotate_entity", "delete_entity"}
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/library")
+def library_catalog() -> dict:
+    return {"components": library.list_components()}
+
+
+@app.get("/library/{cid}/thumbnail.svg")
+def library_thumbnail(cid: str):
+    path = library.component_path(cid)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Unknown component")
+    key = (path, os.path.getmtime(path))
+    svg = _thumb_cache.get(key)
+    if svg is None:
+        from app.sessions import _read_dxf
+
+        with open(path, "rb") as fh:
+            doc = _read_dxf(fh.read())
+        try:
+            svg = render_svg(doc)
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(status_code=422, detail=f"Cannot render component: {e}")
+        _thumb_cache[key] = svg
+    return Response(content=svg, media_type="image/svg+xml")
 
 
 def _summary(doc) -> dict:

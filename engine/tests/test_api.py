@@ -295,3 +295,51 @@ def test_upload_and_undo_include_view(sample_bytes):
     sid = up.json()["session_id"]
     un = client.post(f"/sessions/{sid}/undo")
     assert "view" in un.json()
+
+
+def _lib_dir(tmp_path):
+    import ezdxf
+
+    doc = ezdxf.new("R2010")
+    doc.modelspace().add_lwpolyline([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)])
+    doc.saveas(tmp_path / "CHAIR UNIT.dxf")
+    return str(tmp_path)
+
+
+def test_library_catalog(tmp_path, monkeypatch):
+    from app import library
+
+    monkeypatch.setattr(library, "LIBRARY_DIR", _lib_dir(tmp_path))
+    r = client.get("/library")
+    assert r.status_code == 200
+    comps = r.json()["components"]
+    assert any(c["name"] == "CHAIR UNIT" for c in comps)
+
+
+def test_library_thumbnail_cached(tmp_path, monkeypatch):
+    from app import library
+    from app import main as main_mod
+
+    monkeypatch.setattr(library, "LIBRARY_DIR", _lib_dir(tmp_path))
+    main_mod._thumb_cache.clear()
+    calls = {"n": 0}
+    real = main_mod.render_svg
+
+    def counting(doc):
+        calls["n"] += 1
+        return real(doc)
+
+    monkeypatch.setattr(main_mod, "render_svg", counting)
+    cid = client.get("/library").json()["components"][0]["id"]
+    r1 = client.get(f"/library/{cid}/thumbnail.svg")
+    r2 = client.get(f"/library/{cid}/thumbnail.svg")
+    assert r1.status_code == 200 and "svg" in r1.text[:200].lower()
+    assert r2.status_code == 200
+    assert calls["n"] == 1  # second call served from cache
+
+
+def test_library_thumbnail_unknown(tmp_path, monkeypatch):
+    from app import library
+
+    monkeypatch.setattr(library, "LIBRARY_DIR", _lib_dir(tmp_path))
+    assert client.get("/library/nope/thumbnail.svg").status_code == 404
