@@ -55,3 +55,24 @@ it("throws on non-ok", async () => {
     .mockResolvedValue({ ok: false, status: 422, json: async () => ({ detail: "bad" }) });
   await expect(uploadDxf(new File(["x"], "p.dxf"))).rejects.toThrow();
 });
+
+it("getSelectables returns selectables and view", async () => {
+  const body = { selectables: [{ handle: "A", type: "INSERT", label: "chair", bbox: [0, 0, 1, 1] }], view: null };
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
+  const { getSelectables } = await import("../lib/api");
+  const res = await getSelectables("s1");
+  expect(res.selectables[0].handle).toBe("A");
+  const call = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+  expect(call[0]).toContain("/sessions/s1/selectables");
+});
+
+it("manualEdit posts name+args as json", async () => {
+  const body = { change: { op: "move_entity" }, svg: "<svg/>", view: null, layers: [], selectables: [] };
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
+  const { manualEdit } = await import("../lib/api");
+  const res = await manualEdit("s1", "move_entity", { handle: "A", dx_m: 1, dy_m: 0 });
+  expect(res.change.op).toBe("move_entity");
+  const call = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+  expect(call[0]).toContain("/sessions/s1/edit");
+  expect(JSON.parse(call[1].body)).toEqual({ name: "move_entity", args: { handle: "A", dx_m: 1, dy_m: 0 } });
+});

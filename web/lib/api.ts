@@ -2,13 +2,38 @@ const BASE = process.env.NEXT_PUBLIC_ENGINE_URL ?? "http://localhost:8000";
 
 export type Layer = { name: string; entity_count: number };
 export type Summary = { layers: Layer[]; units: string; unit_options: string[] };
+export type View = {
+  world: [number, number, number, number];
+  viewBox: [number, number, number, number];
+  meters_per_unit: number;
+};
+export type Selectable = {
+  handle: string;
+  type: string;
+  label: string;
+  bbox: [number, number, number, number];
+};
 export type UploadResult = {
   session_id: string;
   svg: string;
   summary: Summary;
+  view?: View | null;
 };
 export type Change = { op: string; handle: string; summary: string };
-export type ChatResult = { reply: string; changes: Change[]; svg: string; layers: Layer[] };
+export type ChatResult = {
+  reply: string;
+  changes: Change[];
+  svg: string;
+  layers: Layer[];
+  view?: View | null;
+};
+export type EditResult = {
+  change: Change;
+  svg: string;
+  view: View | null;
+  layers: Layer[];
+  selectables: Selectable[];
+};
 
 async function asJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -41,9 +66,29 @@ export async function sendChat(
   );
 }
 
-export async function undo(sid: string): Promise<{ svg: string; layers: Layer[] }> {
-  return asJson<{ svg: string; layers: Layer[] }>(
-    await fetch(`${BASE}/sessions/${sid}/undo`, { method: "POST" }),
+export async function undo(
+  sid: string,
+): Promise<{ svg: string; layers: Layer[]; view: View | null }> {
+  return asJson(await fetch(`${BASE}/sessions/${sid}/undo`, { method: "POST" }));
+}
+
+export async function getSelectables(
+  sid: string,
+): Promise<{ selectables: Selectable[]; view: View | null }> {
+  return asJson(await fetch(`${BASE}/sessions/${sid}/selectables`));
+}
+
+export async function manualEdit(
+  sid: string,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<EditResult> {
+  return asJson<EditResult>(
+    await fetch(`${BASE}/sessions/${sid}/edit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, args }),
+    }),
   );
 }
 
