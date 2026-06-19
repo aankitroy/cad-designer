@@ -27,6 +27,8 @@ export function SvgViewer({
   const overlayRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ handle: string; startX: number; startY: number } | null>(null);
   const rotRef = useRef<{ handle: string; cx: number; cy: number; startX: number; startY: number } | null>(null);
+  // live drag offset (svg units) for the item being dragged, so the box follows the cursor
+  const [drag, setDrag] = useState<{ handle: string; dx: number; dy: number } | null>(null);
 
   // keyboard: delete + arrow nudge on the selected entity
   useEffect(() => {
@@ -125,8 +127,13 @@ export function SvgViewer({
                 const isSel = s.handle === selected;
                 const cx = r.x + r.width / 2;
                 const handleY = r.y - r.height * 0.25 - 1;
+                const live = drag?.handle === s.handle ? drag : null;
                 return (
-                  <g key={s.handle}>
+                  <g
+                    key={s.handle}
+                    data-testid={`selg-${s.handle}`}
+                    transform={live ? `translate(${live.dx}, ${live.dy})` : undefined}
+                  >
                     <rect
                       data-testid={`sel-${s.handle}`}
                       x={r.x}
@@ -140,11 +147,19 @@ export function SvgViewer({
                         onSelect?.(s.handle);
                         const p = toSvg(e);
                         dragRef.current = { handle: s.handle, startX: p.x, startY: p.y };
+                        setDrag({ handle: s.handle, dx: 0, dy: 0 });
                         (e.target as Element).setPointerCapture?.(e.pointerId);
+                      }}
+                      onPointerMove={(e) => {
+                        const d = dragRef.current;
+                        if (!d || d.handle !== s.handle) return;
+                        const p = toSvg(e);
+                        setDrag({ handle: s.handle, dx: p.x - d.startX, dy: p.y - d.startY });
                       }}
                       onPointerUp={(e) => {
                         const d = dragRef.current;
                         dragRef.current = null;
+                        setDrag(null);
                         if (!d || !view || !onEdit) return;
                         const p = toSvg(e);
                         const [dx_m, dy_m] = svgDeltaToMeters(view, p.x - d.startX, p.y - d.startY);

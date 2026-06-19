@@ -80,3 +80,14 @@ it("pressing a selectable must not start a canvas pan", () => {
   fireEvent.mouseMove(stage, { clientX: 260, clientY: 260 });
   expect(layer.style.transform).toBe(before); // no pan was triggered by the press
 });
+
+it("dragging moves the selection box live with the cursor", () => {
+  render(
+    <SvgViewer svg="<svg/>" view={view} selectables={[sel]} selected="H1" onEdit={vi.fn()} onSelect={vi.fn()} />,
+  );
+  const box = screen.getByTestId("sel-H1");
+  fireEvent.pointerDown(box, { clientX: 100, clientY: 100 });
+  fireEvent.pointerMove(box, { clientX: 160, clientY: 140 });
+  const g = screen.getByTestId("selg-H1");
+  expect(g.getAttribute("transform")).toBe("translate(60, 40)");
+});
