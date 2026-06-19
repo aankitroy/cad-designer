@@ -49,3 +49,20 @@ def component_bytes():
     buf = io.StringIO()
     doc.write(buf)
     return buf.getvalue().encode("utf-8")
+
+
+@pytest.fixture
+def binary_component_bytes():
+    """A component DXF that only loads in recover mode: it carries group-310
+    binary chunk data (a bitmap/proxy blob, as real CAD blocks do) and uses
+    CRLF line endings. A strict text reader trips on the binary tags with
+    'Invalid binary data' — the same failure real furniture-block files hit."""
+    doc = ezdxf.new("R2010")
+    doc.header["$INSUNITS"] = 4  # mm
+    doc.modelspace().add_lwpolyline([(0, 0), (500, 0), (500, 500), (0, 500), (0, 0)])
+    xrecord = doc.rootdict.add_xrecord("BINARY_BLOB")
+    xrecord.extend([(310, bytes(range(40)))])  # emits a 310 binary chunk
+    buf = io.StringIO()
+    doc.write(buf)
+    # Real CAD exports use CRLF; the strict reader leaves the \r on hex lines.
+    return buf.getvalue().replace("\n", "\r\n").encode("utf-8")

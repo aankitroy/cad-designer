@@ -1,12 +1,11 @@
-import io
 import re
 
-import ezdxf
 from ezdxf.addons import importer
 from ezdxf.document import Drawing
 from ezdxf.math import Matrix44
 
 from app import units
+from app.sessions import _read_dxf
 
 
 def _unique_block_name(doc: Drawing, filename: str) -> str:
@@ -23,7 +22,9 @@ def import_as_block(doc: Drawing, dxf_bytes: bytes, filename: str) -> str:
     """Import an attached DXF's modelspace into a new block in ``doc``, scaled so the
     block is expressed in ``doc``'s drawing units. Returns the new block name."""
     try:
-        src = ezdxf.read(io.StringIO(dxf_bytes.decode("utf-8", errors="replace")))
+        # Use recover mode (same loader as upload) so attachments from other CAD
+        # tools — non-unique handles, CRLF endings, group-310 binary chunks — load.
+        src = _read_dxf(dxf_bytes)
     except Exception as exc:  # ezdxf.DXFStructureError and friends
         raise ValueError(f"Not a valid DXF file: {exc}") from exc
 

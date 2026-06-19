@@ -22,6 +22,16 @@ def test_import_creates_block(component_bytes):
     assert len(list(doc.modelspace())) == 0
 
 
+def test_import_handles_binary_chunk_dxf(binary_component_bytes):
+    # Real CAD blocks carry group-310 binary data with CRLF endings; the strict
+    # text reader fails with "Invalid binary data". import_as_block must use the
+    # same recover-mode loader as upload so these files import successfully.
+    doc = _base_doc()
+    name = import_as_block(doc, binary_component_bytes, "FURNITURE BLOCKS.dxf")
+    assert name in doc.blocks
+    assert len(list(doc.blocks.get(name))) >= 1
+
+
 def test_import_bakes_unit_scale(component_bytes):
     # component is mm (500 units = 0.5 m); base is meters -> block should be ~0.5 wide
     doc = _base_doc(insunits=6)
