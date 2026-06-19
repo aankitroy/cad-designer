@@ -57,9 +57,11 @@ TOOL_SCHEMAS = [
         "name": "place_component",
         "description": (
             "Place a previously-attached component (a block, by name) into the drawing "
-            "at a point in meters. Use list_layers/query_entities to locate a reference "
-            "point first (e.g. near the door). rotation_deg rotates the placement; scale "
-            "multiplies its size (1.0 = real size)."
+            "at a point in meters. The component is CENTERED on (x_m, y_m), so use a "
+            "DRAWING FRAME anchor (e.g. back_center) directly. rotation_deg rotates the "
+            "placement; scale multiplies its size (1.0 = real size). layer sets which "
+            "layer it lands on (defaults to 'Furniture' so placements stack as their own "
+            "toggleable layer over the base)."
         ),
         "input_schema": {
             "type": "object",
@@ -69,6 +71,7 @@ TOOL_SCHEMAS = [
                 "y_m": {"type": "number"},
                 "rotation_deg": {"type": "number"},
                 "scale": {"type": "number"},
+                "layer": {"type": "string", "description": "target layer, e.g. 'Furniture'"},
             },
             "required": ["name", "x_m", "y_m"],
         },
@@ -208,6 +211,7 @@ def dispatch(doc: Drawing, name: str, args: dict) -> dict:
                 doc, args["name"], m(args["x_m"]), m(args["y_m"]),
                 rotation_deg=float(args.get("rotation_deg", 0.0)),
                 scale=float(args.get("scale", 1.0)),
+                layer=args.get("layer") or "Furniture",
             )
             return {"result": None, "change": c, "error": None}
         if name == "rotate_entity":

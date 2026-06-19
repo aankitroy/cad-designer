@@ -90,6 +90,8 @@ def _import_component(doc, insunits=6):
 
 
 def test_place_component(sample_doc):
+    from ezdxf.bbox import extents
+
     doc = sample_doc["doc"]
     name = _import_component(doc)
     change = edits.place_component(doc, name, x=5, y=5, rotation_deg=90, scale=2.0)
@@ -97,9 +99,47 @@ def test_place_component(sample_doc):
     ins = doc.entitydb[change["handle"]]
     assert ins.dxftype() == "INSERT"
     assert ins.dxf.name == name
-    assert ins.dxf.insert.x == 5 and ins.dxf.insert.y == 5
     assert ins.dxf.rotation == 90
     assert ins.dxf.xscale == 2.0
+    # the block's geometry is centered on the target, regardless of base point
+    bb = extents([ins])
+    cx = (bb.extmin.x + bb.extmax.x) / 2
+    cy = (bb.extmin.y + bb.extmax.y) / 2
+    assert abs(cx - 5) < 1e-6 and abs(cy - 5) < 1e-6
+
+
+def test_place_component_centers_offset_block(sample_doc):
+    # a block whose geometry sits far from its own origin must still land on target
+    import io
+
+    import ezdxf
+    from ezdxf.bbox import extents
+
+    from app.components import import_as_block
+
+    doc = sample_doc["doc"]
+    cdoc = ezdxf.new("R2010")
+    cdoc.header["$INSUNITS"] = 6
+    cdoc.modelspace().add_lwpolyline(
+        [(1000, 1000), (1002, 1000), (1002, 1001), (1000, 1001), (1000, 1000)]
+    )
+    buf = io.StringIO()
+    cdoc.write(buf)
+    name = import_as_block(doc, buf.getvalue().encode(), "offset.dxf")
+    ch = edits.place_component(doc, name, x=5, y=5)
+    bb = extents([doc.entitydb[ch["handle"]]])
+    cx = (bb.extmin.x + bb.extmax.x) / 2
+    cy = (bb.extmin.y + bb.extmax.y) / 2
+    assert abs(cx - 5) < 1e-6 and abs(cy - 5) < 1e-6
+
+
+def test_place_component_sets_layer(sample_doc):
+    doc = sample_doc["doc"]
+    name = _import_component(doc)
+    ch = edits.place_component(doc, name, x=1, y=1, layer="Furniture")
+    ins = doc.entitydb[ch["handle"]]
+    assert ins.dxf.layer == "Furniture"
+    assert "Furniture" in doc.layers
 
 
 def test_place_component_unknown_block(sample_doc):

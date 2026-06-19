@@ -106,21 +106,44 @@ def add_wall(
 
 
 def place_component(
-    doc: Drawing, name: str, x: float, y: float, rotation_deg: float = 0.0, scale: float = 1.0
+    doc: Drawing,
+    name: str,
+    x: float,
+    y: float,
+    rotation_deg: float = 0.0,
+    scale: float = 1.0,
+    layer: str = "0",
 ) -> dict:
     if name not in doc.blocks:
         raise ComponentNotFound(f"No component named {name!r}")
+    if layer and layer != "0":
+        ensure_layer(doc, layer)
     ins = doc.modelspace().add_blockref(
         name,
         (x, y),
-        dxfattribs={"xscale": scale, "yscale": scale, "rotation": rotation_deg},
+        dxfattribs={
+            "xscale": scale,
+            "yscale": scale,
+            "rotation": rotation_deg,
+            "layer": layer,
+        },
     )
+    # The block's geometry may sit far from its own (0,0) base point — common in
+    # real CAD libraries. Center the block's actual footprint on the target so it
+    # lands where asked, instead of base-point + offset (which can be off-drawing).
+    from ezdxf.bbox import extents
+
+    bb = extents([ins])
+    if bb.has_data:
+        cx = (bb.extmin.x + bb.extmax.x) / 2
+        cy = (bb.extmin.y + bb.extmax.y) / 2
+        ins.translate(x - cx, y - cy, 0)
     return {
         "op": "place_component",
         "handle": ins.dxf.handle,
         "before": None,
         "after": name,
-        "summary": f"Placed '{name}' at ({x}, {y})",
+        "summary": f"Placed '{name}' centered at ({x}, {y}) on layer '{layer}'",
     }
 
 

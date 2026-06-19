@@ -73,7 +73,37 @@ def test_dispatch_place_component_converts_meters(sample_doc):
     )
     assert out["change"]["op"] == "place_component"
     ins = doc.entitydb[out["change"]["handle"]]
-    assert abs(ins.dxf.insert.x - 3.0) < 1e-6  # meters base -> 3 units
+    from ezdxf.bbox import extents
+
+    bb = extents([ins])
+    cx = (bb.extmin.x + bb.extmax.x) / 2
+    assert abs(cx - 3.0) < 1e-6  # block centered at meters base -> 3 units
+    # furniture lands on its own layer by default
+    assert ins.dxf.layer == "Furniture"
+    assert "Furniture" in doc.layers
+
+
+def test_dispatch_place_component_explicit_layer(sample_doc):
+    import io
+
+    import ezdxf
+
+    from app.components import import_as_block
+
+    doc = sample_doc["doc"]
+    cdoc = ezdxf.new("R2010")
+    cdoc.header["$INSUNITS"] = 6
+    cdoc.modelspace().add_line((0, 0), (1, 0))
+    buf = io.StringIO()
+    cdoc.write(buf)
+    name = import_as_block(doc, buf.getvalue().encode(), "c.dxf")
+
+    out = dispatch(
+        doc, "place_component",
+        {"name": name, "x_m": 1.0, "y_m": 0.0, "layer": "Clinic"},
+    )
+    ins = doc.entitydb[out["change"]["handle"]]
+    assert ins.dxf.layer == "Clinic"
 
 
 def test_dispatch_rotate(sample_doc):
