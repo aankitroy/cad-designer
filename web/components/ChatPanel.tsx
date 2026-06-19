@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type Msg = { role: "user" | "assistant"; text: string };
 
@@ -13,34 +13,62 @@ export function ChatPanel({
   busy: boolean;
 }) {
   const [text, setText] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, busy]);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
-        {messages.map((m, i) => (
-          <p key={i} style={{ color: m.role === "user" ? "#222" : "#0b6" }}>
-            <b>{m.role === "user" ? "You" : "AI"}:</b> {m.text}
-          </p>
-        ))}
+    <div className="chat">
+      <div className="panel-head">
+        <span className="dot" />
+        Assistant
       </div>
+
+      <div className="chat-scroll" ref={scrollRef}>
+        {messages.map((m, i) => (
+          <div key={i} className={m.role === "user" ? "msg msg-user" : "msg msg-ai"}>
+            {m.text}
+          </div>
+        ))}
+        {busy && (
+          <div className="typing" aria-label="Assistant is working">
+            <span />
+            <span />
+            <span />
+          </div>
+        )}
+      </div>
+
       <form
+        className="chat-form"
         onSubmit={(e) => {
           e.preventDefault();
-          if (text.trim()) {
+          if (text.trim() && !busy) {
             onSend(text.trim());
             setText("");
           }
         }}
-        style={{ display: "flex", gap: 8, padding: 12 }}
       >
         <input
+          className="chat-input"
           placeholder="Describe a change…"
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={busy}
-          style={{ flex: 1 }}
         />
-        <button type="submit" disabled={busy}>
-          Send
+        <button type="submit" className="send-btn" aria-label="Send" disabled={busy}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M5 12h14M13 6l6 6-6 6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
       </form>
     </div>
