@@ -26,6 +26,7 @@ export function SvgViewer({
   const stageRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ handle: string; startX: number; startY: number } | null>(null);
+  const rotRef = useRef<{ handle: string; cx: number; cy: number; startX: number; startY: number } | null>(null);
 
   // keyboard: delete + arrow nudge on the selected entity
   useEffect(() => {
@@ -122,32 +123,67 @@ export function SvgViewer({
               {selectables.map((s) => {
                 const r = svgRectFromBBox(view, s.bbox);
                 const isSel = s.handle === selected;
+                const cx = r.x + r.width / 2;
+                const handleY = r.y - r.height * 0.25 - 1;
                 return (
-                  <rect
-                    key={s.handle}
-                    data-testid={`sel-${s.handle}`}
-                    x={r.x}
-                    y={r.y}
-                    width={r.width}
-                    height={r.height}
-                    className={isSel ? "sel-box sel-box-active" : "sel-box"}
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                      onSelect?.(s.handle);
-                      const p = toSvg(e);
-                      dragRef.current = { handle: s.handle, startX: p.x, startY: p.y };
-                      (e.target as Element).setPointerCapture?.(e.pointerId);
-                    }}
-                    onPointerUp={(e) => {
-                      const d = dragRef.current;
-                      dragRef.current = null;
-                      if (!d || !view || !onEdit) return;
-                      const p = toSvg(e);
-                      const [dx_m, dy_m] = svgDeltaToMeters(view, p.x - d.startX, p.y - d.startY);
-                      if (dx_m !== 0 || dy_m !== 0)
-                        onEdit("move_entity", { handle: d.handle, dx_m, dy_m });
-                    }}
-                  />
+                  <g key={s.handle}>
+                    <rect
+                      data-testid={`sel-${s.handle}`}
+                      x={r.x}
+                      y={r.y}
+                      width={r.width}
+                      height={r.height}
+                      className={isSel ? "sel-box sel-box-active" : "sel-box"}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        onSelect?.(s.handle);
+                        const p = toSvg(e);
+                        dragRef.current = { handle: s.handle, startX: p.x, startY: p.y };
+                        (e.target as Element).setPointerCapture?.(e.pointerId);
+                      }}
+                      onPointerUp={(e) => {
+                        const d = dragRef.current;
+                        dragRef.current = null;
+                        if (!d || !view || !onEdit) return;
+                        const p = toSvg(e);
+                        const [dx_m, dy_m] = svgDeltaToMeters(view, p.x - d.startX, p.y - d.startY);
+                        if (dx_m !== 0 || dy_m !== 0)
+                          onEdit("move_entity", { handle: d.handle, dx_m, dy_m });
+                      }}
+                    />
+                    {isSel && (
+                      <circle
+                        data-testid={`rotate-${s.handle}`}
+                        cx={cx}
+                        cy={handleY}
+                        r={Math.max(r.width, r.height) * 0.06 + 3000}
+                        className="rotate-handle"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          const p = toSvg(e);
+                          rotRef.current = {
+                            handle: s.handle,
+                            cx,
+                            cy: r.y + r.height / 2,
+                            startX: p.x,
+                            startY: p.y,
+                          };
+                          (e.target as Element).setPointerCapture?.(e.pointerId);
+                        }}
+                        onPointerUp={(e) => {
+                          const rt = rotRef.current;
+                          rotRef.current = null;
+                          if (!rt || !onEdit) return;
+                          const p = toSvg(e);
+                          const a0 = Math.atan2(rt.startY - rt.cy, rt.startX - rt.cx);
+                          const a1 = Math.atan2(p.y - rt.cy, p.x - rt.cx);
+                          let deg = ((a1 - a0) * 180) / Math.PI;
+                          deg = Math.round(deg / 15) * 15; // snap 15°
+                          onEdit("rotate_entity", { handle: rt.handle, angle_deg: deg });
+                        }}
+                      />
+                    )}
+                  </g>
                 );
               })}
             </svg>

@@ -57,3 +57,14 @@ it("arrow key nudges by 0.1m via move_entity", () => {
   fireEvent.keyDown(window, { key: "ArrowRight" });
   expect(onEdit).toHaveBeenCalledWith("move_entity", { handle: "H1", dx_m: 0.1, dy_m: 0 });
 });
+
+it("dragging the rotate handle calls onEdit rotate_entity", () => {
+  const onEdit = vi.fn().mockResolvedValue(undefined);
+  render(
+    <SvgViewer svg="<svg/>" view={view} selectables={[sel]} selected="H1" onEdit={onEdit} onSelect={vi.fn()} />,
+  );
+  const handle = screen.getByTestId("rotate-H1");
+  fireEvent.pointerDown(handle, { clientX: 0, clientY: 0 });
+  fireEvent.pointerUp(handle, { clientX: 0, clientY: 0 });
+  expect(onEdit).toHaveBeenCalledWith("rotate_entity", expect.objectContaining({ handle: "H1" }));
+});
