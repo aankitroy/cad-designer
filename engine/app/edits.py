@@ -5,6 +5,10 @@ class EntityNotFound(Exception):
     pass
 
 
+class ComponentNotFound(Exception):
+    pass
+
+
 def _get(doc: Drawing, handle: str):
     e = doc.entitydb.get(handle)
     if e is None or not e.is_alive:
@@ -98,6 +102,53 @@ def add_wall(
         "before": None,
         "after": [(x1, y1), (x2, y2)],
         "summary": f"Added wall ({x1},{y1})->({x2},{y2})",
+    }
+
+
+def place_component(
+    doc: Drawing, name: str, x: float, y: float, rotation_deg: float = 0.0, scale: float = 1.0
+) -> dict:
+    if name not in doc.blocks:
+        raise ComponentNotFound(f"No component named {name!r}")
+    ins = doc.modelspace().add_blockref(
+        name,
+        (x, y),
+        dxfattribs={"xscale": scale, "yscale": scale, "rotation": rotation_deg},
+    )
+    return {
+        "op": "place_component",
+        "handle": ins.dxf.handle,
+        "before": None,
+        "after": name,
+        "summary": f"Placed '{name}' at ({x}, {y})",
+    }
+
+
+def rotate_entity(doc: Drawing, handle: str, angle_deg: float) -> dict:
+    import math as _math
+
+    from ezdxf.math import Matrix44
+
+    e = _get(doc, handle)
+    if e.dxftype() == "INSERT":
+        before = e.dxf.rotation
+        e.dxf.rotation = (e.dxf.rotation + angle_deg) % 360
+        after = e.dxf.rotation
+    else:
+        pt = _summarize_point(e) or [0.0, 0.0]
+        m = (
+            Matrix44.translate(-pt[0], -pt[1], 0)
+            @ Matrix44.z_rotate(_math.radians(angle_deg))
+            @ Matrix44.translate(pt[0], pt[1], 0)
+        )
+        e.transform(m)
+        before, after = 0.0, angle_deg
+    return {
+        "op": "rotate_entity",
+        "handle": handle,
+        "before": before,
+        "after": after,
+        "summary": f"Rotated {e.dxftype()} by {angle_deg}°",
     }
 
 
