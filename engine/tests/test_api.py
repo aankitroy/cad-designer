@@ -343,3 +343,51 @@ def test_library_thumbnail_unknown(tmp_path, monkeypatch):
 
     monkeypatch.setattr(library, "LIBRARY_DIR", _lib_dir(tmp_path))
     assert client.get("/library/nope/thumbnail.svg").status_code == 404
+
+
+def test_library_place_imports_once_and_centers(sample_bytes, tmp_path, monkeypatch):
+    from app import library
+
+    monkeypatch.setattr(library, "LIBRARY_DIR", _lib_dir(tmp_path))
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    cid = client.get("/library").json()["components"][0]["id"]
+
+    r = client.post(
+        f"/sessions/{sid}/library/place",
+        json={"id": cid, "x_m": 5.0, "y_m": 4.0},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["change"]["op"] == "place_component"
+    assert any(s["handle"] == body["change"]["handle"] for s in body["selectables"])
+    assert body["view"] is not None
+
+    n_blocks = len(list(main.store.get(sid).blocks))
+    client.post(f"/sessions/{sid}/library/place", json={"id": cid, "x_m": 1, "y_m": 1})
+    assert len(list(main.store.get(sid).blocks)) == n_blocks  # no new block def
+
+
+def test_library_place_unknown_id(sample_bytes, tmp_path, monkeypatch):
+    from app import library
+
+    monkeypatch.setattr(library, "LIBRARY_DIR", _lib_dir(tmp_path))
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    r = client.post(
+        f"/sessions/{sid}/library/place", json={"id": "ghost", "x_m": 0, "y_m": 0}
+    )
+    assert r.status_code == 404
+
+
+def test_library_place_unknown_session(sample_bytes, tmp_path, monkeypatch):
+    from app import library
+
+    monkeypatch.setattr(library, "LIBRARY_DIR", _lib_dir(tmp_path))
+    _fresh_store()
+    main.store.create(sample_bytes)
+    cid = client.get("/library").json()["components"][0]["id"]
+    r = client.post(
+        "/sessions/nosuch/library/place", json={"id": cid, "x_m": 0, "y_m": 0}
+    )
+    assert r.status_code == 404

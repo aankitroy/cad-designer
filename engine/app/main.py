@@ -102,6 +102,14 @@ class EditRequest(BaseModel):
     args: dict
 
 
+class LibraryPlaceRequest(BaseModel):
+    id: str
+    x_m: float
+    y_m: float
+    rotation_deg: float = 0.0
+    layer: str = "Furniture"
+
+
 _MANUAL_OPS = {"move_entity", "rotate_entity", "delete_entity"}
 
 
@@ -262,6 +270,44 @@ def edit(sid: str, req: EditRequest) -> dict:
     current = store.get(sid)
     return {
         "change": out["change"],
+        "svg": render_svg(current),
+        "view": view_mod.svg_view(current),
+        "layers": list_layers(current),
+        "selectables": _selectable_entities(current, sid),
+    }
+
+
+@app.post("/sessions/{sid}/library/place")
+def library_place(sid: str, req: LibraryPlaceRequest) -> dict:
+    doc = store.get(sid)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Unknown session")
+    path = library.component_path(req.id)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Unknown component")
+
+    imported = _library_blocks.setdefault(sid, {})
+    block_name = imported.get(req.id)
+    if block_name is None or block_name not in doc.blocks:
+        with open(path, "rb") as fh:
+            data = fh.read()
+        try:
+            block_name = components.import_as_block(doc, data, os.path.basename(path))
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+        imported[req.id] = block_name
+        _components.setdefault(sid, []).append(block_name)
+
+    x = units.meters_to_drawing_units(doc, req.x_m)
+    y = units.meters_to_drawing_units(doc, req.y_m)
+    store.snapshot(sid)
+    change = edits.place_component(
+        doc, block_name, x, y, rotation_deg=req.rotation_deg, layer=req.layer
+    )
+    _record_changes(sid, [change])
+    current = store.get(sid)
+    return {
+        "change": change,
         "svg": render_svg(current),
         "view": view_mod.svg_view(current),
         "layers": list_layers(current),
