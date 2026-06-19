@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from app import components, space, units
+from app import components, space, tools, units
 from app import view as view_mod
 from app.agent import run_agent
 from app.query import list_layers
@@ -91,6 +91,14 @@ class UnitsRequest(BaseModel):
     units: str
 
 
+class EditRequest(BaseModel):
+    name: str
+    args: dict
+
+
+_MANUAL_OPS = {"move_entity", "rotate_entity", "delete_entity"}
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
@@ -112,7 +120,12 @@ async def create_session(file: UploadFile = File(...)) -> dict:
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     doc = store.get(sid)
-    return {"session_id": sid, "svg": render_svg(doc), "summary": _summary(doc)}
+    return {
+        "session_id": sid,
+        "svg": render_svg(doc),
+        "summary": _summary(doc),
+        "view": view_mod.svg_view(doc),
+    }
 
 
 @app.post("/sessions/{sid}/chat")
@@ -193,7 +206,36 @@ def undo(sid: str) -> dict:
         raise HTTPException(status_code=404, detail="Unknown session")
     store.undo(sid)
     current = store.get(sid)
-    return {"svg": render_svg(current), "layers": list_layers(current)}
+    return {
+        "svg": render_svg(current),
+        "layers": list_layers(current),
+        "view": view_mod.svg_view(current),
+    }
+
+
+@app.post("/sessions/{sid}/edit")
+def edit(sid: str, req: EditRequest) -> dict:
+    doc = store.get(sid)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Unknown session")
+    if req.name not in _MANUAL_OPS:
+        raise HTTPException(status_code=400, detail=f"Unsupported edit op: {req.name}")
+
+    store.snapshot(sid)
+    out = tools.dispatch(doc, req.name, req.args)
+    if out["error"]:
+        store.undo(sid)  # revert the snapshot; nothing changed
+        raise HTTPException(status_code=422, detail=out["error"])
+
+    _record_changes(sid, [out["change"]])
+    current = store.get(sid)
+    return {
+        "change": out["change"],
+        "svg": render_svg(current),
+        "view": view_mod.svg_view(current),
+        "layers": list_layers(current),
+        "selectables": _selectable_entities(current, sid),
+    }
 
 
 @app.get("/sessions/{sid}/dxf")

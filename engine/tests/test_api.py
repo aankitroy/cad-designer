@@ -227,3 +227,71 @@ def test_selectables_lists_added_excludes_base(sample_bytes, monkeypatch):
     assert body["view"] is not None
     one = next(e for e in body["selectables"] if e["handle"] == added_handle)
     assert len(one["bbox"]) == 4 and "label" in one
+
+
+def test_edit_move_converts_meters_and_returns_view(sample_bytes):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    from app import edits
+
+    c = edits.add_wall(main.store.get(sid), 2, 2, 4, 2, layer="NEW")
+    main._editable.setdefault(sid, set()).add(c["handle"])
+    h = c["handle"]
+
+    r = client.post(
+        f"/sessions/{sid}/edit",
+        json={"name": "move_entity", "args": {"handle": h, "dx_m": 1.0, "dy_m": 0.0}},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["change"]["op"] == "move_entity"
+    assert body["view"] is not None and "selectables" in body
+    moved = main.store.get(sid).entitydb[h]
+    first_x = list(moved.get_points())[0][0]
+    assert abs(first_x - 3.0) < 1e-6  # was 2, +1m (meters fixture)
+
+
+def test_edit_delete_drops_from_selectables(sample_bytes):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    from app import edits
+
+    c = edits.add_wall(main.store.get(sid), 0, 0, 1, 1, layer="NEW")
+    main._editable.setdefault(sid, set()).add(c["handle"])
+    h = c["handle"]
+    r = client.post(
+        f"/sessions/{sid}/edit", json={"name": "delete_entity", "args": {"handle": h}}
+    )
+    assert r.status_code == 200
+    assert all(e["handle"] != h for e in r.json()["selectables"])
+
+
+def test_edit_rejects_unknown_op(sample_bytes):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    r = client.post(f"/sessions/{sid}/edit", json={"name": "frobnicate", "args": {}})
+    assert r.status_code == 400
+
+
+def test_edit_bad_handle_is_422_and_no_change(sample_bytes):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    before = len(list(main.store.get(sid).modelspace()))
+    r = client.post(
+        f"/sessions/{sid}/edit",
+        json={"name": "move_entity", "args": {"handle": "DEAD", "dx_m": 1, "dy_m": 0}},
+    )
+    assert r.status_code == 422
+    assert len(list(main.store.get(sid).modelspace())) == before
+
+
+def test_upload_and_undo_include_view(sample_bytes):
+    _fresh_store()
+    up = client.post(
+        "/sessions",
+        files={"file": ("plan.dxf", io.BytesIO(sample_bytes), "application/dxf")},
+    )
+    assert up.json()["view"] is not None
+    sid = up.json()["session_id"]
+    un = client.post(f"/sessions/{sid}/undo")
+    assert "view" in un.json()
