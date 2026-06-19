@@ -1,7 +1,22 @@
 import ezdxf
 import pytest
 
-from app.units import current_units, meters_to_drawing_units, set_units
+from app.units import (
+    current_units,
+    meters_per_unit,
+    meters_to_drawing_units,
+    set_units,
+)
+
+
+def test_meters_per_unit_mm():
+    doc = ezdxf.new("R2010")
+    doc.header["$INSUNITS"] = 4  # mm
+    assert meters_per_unit(doc) == 0.001
+
+
+def test_meters_per_unit_default_meters(sample_doc):
+    assert meters_per_unit(sample_doc["doc"]) == 1.0
 
 
 def test_meters_when_doc_in_meters(sample_doc):

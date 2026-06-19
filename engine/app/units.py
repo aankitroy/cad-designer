@@ -18,10 +18,13 @@ _NAME_BY_CODE = {code: name for name, code in _CODE_BY_NAME.items()}
 UNIT_NAMES = ["mm", "cm", "m", "in", "ft", "unitless"]
 
 
-def meters_to_drawing_units(doc: Drawing, meters: float) -> float:
+def meters_per_unit(doc: Drawing) -> float:
     code = int(doc.header.get("$INSUNITS", 0))
-    mpu = _METERS_PER_UNIT.get(code, 1.0)
-    return meters / mpu
+    return _METERS_PER_UNIT.get(code, 1.0)
+
+
+def meters_to_drawing_units(doc: Drawing, meters: float) -> float:
+    return meters / meters_per_unit(doc)
 
 
 def current_units(doc: Drawing) -> str:
