@@ -199,8 +199,12 @@ button:disabled {
   cursor: grabbing;
 }
 
+/* DXF SVGs declare a physical size (e.g. 5867mm); force them to fit the stage
+   and let their viewBox scale the geometry to fit. */
 .canvas-stage svg {
-  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.06));
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .zoom-hint {

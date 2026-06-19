@@ -12,6 +12,15 @@ def test_render_returns_svg_string(sample_doc):
     assert "svg" in svg[:200].lower()
 
 
+def test_render_uses_white_background(sample_doc):
+    """CAD files default to a dark screen background; we force white so the drawing
+    sits correctly on the app's light canvas."""
+    svg = render_svg(sample_doc["doc"])
+    fills = re.findall(r'fill="([^"]+)"', svg)
+    assert "#ffffff" in [f.lower() for f in fills]
+    assert "#212830" not in [f.lower() for f in fills]  # ezdxf's default dark bg
+
+
 def test_render_expands_block_inserts():
     """Geometry nested inside a block INSERT (as in real exports like BASE CAD.dxf,
     where all content lives one INSERT deep) must still be drawn."""
