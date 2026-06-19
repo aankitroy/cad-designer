@@ -53,12 +53,61 @@ def test_chat_applies_edit_and_rerenders(sample_bytes, monkeypatch):
     monkeypatch.setattr(main, "run_agent", fake_run_agent)
     monkeypatch.setattr(main, "_anthropic_client", lambda: object())
 
-    r = client.post(f"/sessions/{sid}/chat", json={"message": "add a wall"})
+    r = client.post(f"/sessions/{sid}/chat", data={"message": "add a wall"})
     assert r.status_code == 200
     body = r.json()
     assert body["reply"] == "Added a wall."
     assert body["changes"][0]["op"] == "add_wall"
     assert body["svg"].lstrip().startswith("<")
+
+
+def test_chat_with_attachment_imports_and_exposes_component(
+    sample_bytes, component_bytes, monkeypatch
+):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    seen = {}
+
+    def fake_run_agent(**kwargs):
+        seen["components"] = kwargs.get("components")
+        from app import edits
+
+        name = kwargs["components"][0]
+        c = edits.place_component(kwargs["doc"], name, 0, 0)
+        return {"reply": "placed", "changes": [c]}
+
+    monkeypatch.setattr(main, "run_agent", fake_run_agent)
+    monkeypatch.setattr(main, "_anthropic_client", lambda: object())
+
+    r = client.post(
+        f"/sessions/{sid}/chat",
+        data={"message": "place the chair by the door"},
+        files={"file": ("chair.dxf", io.BytesIO(component_bytes), "application/dxf")},
+    )
+    assert r.status_code == 200
+    assert seen["components"] == ["chair"]
+    assert r.json()["changes"][0]["op"] == "place_component"
+
+
+def test_chat_without_attachment_still_works(sample_bytes, monkeypatch):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    monkeypatch.setattr(main, "run_agent", lambda **k: {"reply": "ok", "changes": []})
+    monkeypatch.setattr(main, "_anthropic_client", lambda: object())
+    r = client.post(f"/sessions/{sid}/chat", data={"message": "hi"})
+    assert r.status_code == 200
+
+
+def test_chat_rejects_bad_attachment(sample_bytes, monkeypatch):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    monkeypatch.setattr(main, "_anthropic_client", lambda: object())
+    r = client.post(
+        f"/sessions/{sid}/chat",
+        data={"message": "place this"},
+        files={"file": ("x.dxf", io.BytesIO(b"junk"), "application/dxf")},
+    )
+    assert r.status_code == 422
 
 
 def test_undo_endpoint(sample_bytes):
