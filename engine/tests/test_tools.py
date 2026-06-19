@@ -33,6 +33,16 @@ def test_dispatch_move_converts_meters(sample_doc):
     assert abs(line.dxf.start.x - 4.0) < 1e-6  # was 2.0
 
 
+def test_dispatch_create_layer(sample_doc):
+    out = dispatch(sample_doc["doc"], "create_layer", {"name": "FURNITURE"})
+    assert out["change"]["op"] == "create_layer"
+    assert "FURNITURE" in sample_doc["doc"].layers
+
+
+def test_create_layer_in_schemas():
+    assert "create_layer" in {t["name"] for t in TOOL_SCHEMAS}
+
+
 def test_dispatch_unknown_tool(sample_doc):
     out = dispatch(sample_doc["doc"], "frobnicate", {})
     assert out["error"]

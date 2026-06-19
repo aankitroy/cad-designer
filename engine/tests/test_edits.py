@@ -49,6 +49,26 @@ def test_set_layer(sample_doc):
     assert change["before"] == "FIXTURES"
 
 
+def test_create_layer(sample_doc):
+    doc = sample_doc["doc"]
+    change = edits.create_layer(doc, "FURNITURE", color=3)
+    assert change["op"] == "create_layer"
+    assert "FURNITURE" in doc.layers
+
+
+def test_add_wall_auto_creates_layer(sample_doc):
+    doc = sample_doc["doc"]
+    assert "ELECTRICAL" not in doc.layers
+    edits.add_wall(doc, 0, 0, 1, 1, layer="ELECTRICAL")
+    assert "ELECTRICAL" in doc.layers
+
+
+def test_set_layer_auto_creates_layer(sample_doc):
+    doc = sample_doc["doc"]
+    edits.set_layer(doc, sample_doc["line_handle"], "NEWLAYER")
+    assert "NEWLAYER" in doc.layers
+
+
 def test_move_missing_handle_raises(sample_doc):
     with pytest.raises(edits.EntityNotFound):
         edits.move_entity(sample_doc["doc"], "DEADBEEF", dx=1, dy=1)

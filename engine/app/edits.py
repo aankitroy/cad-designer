@@ -12,6 +12,25 @@ def _get(doc: Drawing, handle: str):
     return e
 
 
+def ensure_layer(doc: Drawing, name: str, color: int = 7) -> bool:
+    """Create the layer if it doesn't exist. Returns True if newly created."""
+    if name in doc.layers:
+        return False
+    doc.layers.add(name, color=color)
+    return True
+
+
+def create_layer(doc: Drawing, name: str, color: int = 7) -> dict:
+    created = ensure_layer(doc, name, color)
+    return {
+        "op": "create_layer",
+        "handle": "",
+        "before": None,
+        "after": name,
+        "summary": (f"Created layer '{name}'" if created else f"Layer '{name}' already exists"),
+    }
+
+
 def _summarize_point(e):
     try:
         if e.dxftype() == "LINE":
@@ -55,6 +74,7 @@ def add_text_label(
     doc: Drawing, x: float, y: float, text: str, layer: str = "TEXT", height: float = 0.3
 ) -> dict:
     msp = doc.modelspace()
+    ensure_layer(doc, layer)
     t = msp.add_text(text, dxfattribs={"layer": layer, "height": height})
     t.set_placement((x, y))
     return {
@@ -70,6 +90,7 @@ def add_wall(
     doc: Drawing, x1: float, y1: float, x2: float, y2: float, layer: str = "WALLS"
 ) -> dict:
     msp = doc.modelspace()
+    ensure_layer(doc, layer)
     p = msp.add_lwpolyline([(x1, y1), (x2, y2)], dxfattribs={"layer": layer})
     return {
         "op": "add_wall",
@@ -83,6 +104,7 @@ def add_wall(
 def set_layer(doc: Drawing, handle: str, layer: str) -> dict:
     e = _get(doc, handle)
     before = e.dxf.layer
+    ensure_layer(doc, layer)
     e.dxf.layer = layer
     return {
         "op": "set_layer",

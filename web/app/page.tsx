@@ -54,6 +54,7 @@ export default function Home() {
     try {
       const res = await sendChat(sid, msg);
       setSvg(res.svg);
+      setLayers(res.layers);
       setMessages((m) => [...m, { role: "assistant", text: res.reply }]);
       setChanges((c) => [...c, ...res.changes]);
     } catch (e) {
@@ -79,6 +80,7 @@ export default function Home() {
     try {
       const res = await undo(sid);
       setSvg(res.svg);
+      setLayers(res.layers);
       setChanges((c) => c.slice(0, -1));
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e));

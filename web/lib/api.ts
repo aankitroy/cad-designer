@@ -8,7 +8,7 @@ export type UploadResult = {
   summary: Summary;
 };
 export type Change = { op: string; handle: string; summary: string };
-export type ChatResult = { reply: string; changes: Change[]; svg: string };
+export type ChatResult = { reply: string; changes: Change[]; svg: string; layers: Layer[] };
 
 async function asJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -38,8 +38,8 @@ export async function sendChat(sid: string, message: string): Promise<ChatResult
   );
 }
 
-export async function undo(sid: string): Promise<{ svg: string }> {
-  return asJson<{ svg: string }>(
+export async function undo(sid: string): Promise<{ svg: string; layers: Layer[] }> {
+  return asJson<{ svg: string; layers: Layer[] }>(
     await fetch(`${BASE}/sessions/${sid}/undo`, { method: "POST" }),
   );
 }

@@ -7,6 +7,9 @@ SYSTEM = (
     "Always use query_entities or list_layers to locate entities before editing — "
     "never guess a handle. Distances and coordinates you pass are in METERS. "
     "If a reference is ambiguous, ask a brief clarifying question instead of guessing. "
+    "Organize additions onto layers: pass a `layer` to add_wall/add_text_label to place "
+    "entities on a specific layer, and use create_layer to start a new one (e.g. "
+    "'Furniture', 'Electrical') so the user's additions stack as separate layers. "
     "After making edits, give a one-sentence summary of what changed."
 )
 

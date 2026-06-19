@@ -77,10 +77,12 @@ def chat(sid: str, req: ChatRequest) -> dict:
     )
     if not out["changes"]:
         store.undo(sid)  # discard the no-op snapshot
+    current = store.get(sid)
     return {
         "reply": out["reply"],
         "changes": out["changes"],
-        "svg": render_svg(store.get(sid)),
+        "svg": render_svg(current),
+        "layers": list_layers(current),
     }
 
 
@@ -102,7 +104,8 @@ def undo(sid: str) -> dict:
     if doc is None:
         raise HTTPException(status_code=404, detail="Unknown session")
     store.undo(sid)
-    return {"svg": render_svg(store.get(sid))}
+    current = store.get(sid)
+    return {"svg": render_svg(current), "layers": list_layers(current)}
 
 
 @app.get("/sessions/{sid}/dxf")

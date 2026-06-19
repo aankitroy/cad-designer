@@ -54,6 +54,22 @@ TOOL_SCHEMAS = [
         },
     },
     {
+        "name": "create_layer",
+        "description": (
+            "Create a new layer (or confirm one exists) so additions can be organized "
+            "onto it. e.g. create_layer('Furniture') then add_wall/add_text_label with "
+            "layer='Furniture'. Adding to a non-existent layer also auto-creates it."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "color": {"type": "integer", "description": "ACI color 1-255, optional"},
+            },
+            "required": ["name"],
+        },
+    },
+    {
         "name": "add_wall",
         "description": "Add a straight wall between two points (meters).",
         "input_schema": {
@@ -138,6 +154,9 @@ def dispatch(doc: Drawing, name: str, args: dict) -> dict:
                 "change": edits.set_layer(doc, args["handle"], args["layer"]),
                 "error": None,
             }
+        if name == "create_layer":
+            c = edits.create_layer(doc, args["name"], int(args.get("color", 7)))
+            return {"result": None, "change": c, "error": None}
         return {"result": None, "change": None, "error": f"Unknown tool {name}"}
     except edits.EntityNotFound as e:
         return {"result": None, "change": None, "error": str(e)}
