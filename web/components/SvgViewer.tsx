@@ -5,6 +5,24 @@ export function SvgViewer({ svg }: { svg: string }) {
   const [scale, setScale] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number } | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  function zoomAroundCenter(factor: number) {
+    const el = stageRef.current;
+    const cx = el ? el.clientWidth / 2 : 0;
+    const cy = el ? el.clientHeight / 2 : 0;
+    setScale((s) => {
+      const next = Math.min(20, Math.max(0.05, s * factor));
+      const applied = next / s;
+      setPos((p) => ({ x: cx - (cx - p.x) * applied, y: cy - (cy - p.y) * applied }));
+      return next;
+    });
+  }
+
+  function resetView() {
+    setScale(1);
+    setPos({ x: 0, y: 0 });
+  }
 
   if (!svg) {
     return (
@@ -32,6 +50,7 @@ export function SvgViewer({ svg }: { svg: string }) {
   return (
     <>
       <div
+        ref={stageRef}
         className="canvas-stage"
         onWheel={(e) =>
           setScale((s) => Math.min(20, Math.max(0.05, s - e.deltaY * 0.0015)))
@@ -56,6 +75,31 @@ export function SvgViewer({ svg }: { svg: string }) {
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       </div>
+
+      <div className="canvas-controls">
+        <button aria-label="Zoom in" onClick={() => zoomAroundCenter(1.25)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+        <button aria-label="Zoom out" onClick={() => zoomAroundCenter(0.8)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+        <button aria-label="Reset view" onClick={resetView}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
       <div className="zoom-hint">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
