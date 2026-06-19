@@ -1,19 +1,27 @@
 import logging
 
 from ezdxf.addons.drawing import Frontend, RenderContext
-from ezdxf.addons.drawing.config import BackgroundPolicy, ColorPolicy, Configuration
+from ezdxf.addons.drawing.config import (
+    BackgroundPolicy,
+    ColorPolicy,
+    Configuration,
+    HatchPolicy,
+)
 from ezdxf.addons.drawing.layout import Page
 from ezdxf.addons.drawing.svg import SVGBackend
 from ezdxf.document import Drawing
 
 log = logging.getLogger(__name__)
 
-# Render on a white background (CAD files default to a dark screen background).
-# COLOR_SWAP_BW keeps real layer colors but swaps white<->black so lines drawn in
-# white (invisible on white) become black and stay visible.
+# Render as a clean architectural drawing: white background with dark monochrome
+# lines (MONOCHROME_LIGHT_BG), the way a floor plan reads on paper. This also avoids
+# the dark-filled interior you get when a white solid floor-fill is swapped to black.
+# SHOW_APPROXIMATE_PATTERN draws hatch patterns (e.g. wall hatching) instead of
+# flooding regions with solid fill.
 _CONFIG = Configuration().with_changes(
     background_policy=BackgroundPolicy.WHITE,
-    color_policy=ColorPolicy.COLOR_SWAP_BW,
+    color_policy=ColorPolicy.MONOCHROME_LIGHT_BG,
+    hatch_policy=HatchPolicy.SHOW_APPROXIMATE_PATTERN,
 )
 
 
