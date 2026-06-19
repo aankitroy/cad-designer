@@ -134,6 +134,7 @@ export function SvgViewer({
                       width={r.width}
                       height={r.height}
                       className={isSel ? "sel-box sel-box-active" : "sel-box"}
+                      onMouseDown={(e) => e.stopPropagation()}
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         onSelect?.(s.handle);
@@ -158,6 +159,7 @@ export function SvgViewer({
                         cy={handleY}
                         r={Math.max(r.width, r.height) * 0.06 + 3000}
                         className="rotate-handle"
+                        onMouseDown={(e) => e.stopPropagation()}
                         onPointerDown={(e) => {
                           e.stopPropagation();
                           const p = toSvg(e);

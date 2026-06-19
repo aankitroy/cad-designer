@@ -68,3 +68,15 @@ it("dragging the rotate handle calls onEdit rotate_entity", () => {
   fireEvent.pointerUp(handle, { clientX: 0, clientY: 0 });
   expect(onEdit).toHaveBeenCalledWith("rotate_entity", expect.objectContaining({ handle: "H1" }));
 });
+
+it("pressing a selectable must not start a canvas pan", () => {
+  const { container } = render(
+    <SvgViewer svg="<svg/>" view={view} selectables={[sel]} selected="H1" onEdit={vi.fn()} onSelect={vi.fn()} />,
+  );
+  const stage = container.querySelector(".canvas-stage") as HTMLElement;
+  const layer = stage.firstElementChild as HTMLElement; // the translate/scale wrapper
+  const before = layer.style.transform;
+  fireEvent.mouseDown(screen.getByTestId("sel-H1"), { clientX: 100, clientY: 100 });
+  fireEvent.mouseMove(stage, { clientX: 260, clientY: 260 });
+  expect(layer.style.transform).toBe(before); // no pan was triggered by the press
+});
