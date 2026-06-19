@@ -4,10 +4,12 @@ import { Uploader } from "../components/Uploader";
 import { SvgViewer } from "../components/SvgViewer";
 import { ChatPanel, type Msg } from "../components/ChatPanel";
 import { ChangeLog } from "../components/ChangeLog";
+import { UnitsSelect } from "../components/UnitsSelect";
 import {
   uploadDxf,
   sendChat,
   undo,
+  setUnits,
   downloadUrl,
   type Change,
   type Layer,
@@ -18,6 +20,8 @@ export default function Home() {
   const [svg, setSvg] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
+  const [units, setUnitsState] = useState<string>("m");
+  const [unitOptions, setUnitOptions] = useState<string[]>([]);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [changes, setChanges] = useState<Change[]>([]);
   const [busy, setBusy] = useState(false);
@@ -31,6 +35,8 @@ export default function Home() {
       setSvg(res.svg);
       setFileName(file.name);
       setLayers(res.summary.layers);
+      setUnitsState(res.summary.units);
+      setUnitOptions(res.summary.unit_options);
       setMessages([
         { role: "assistant", text: "Floor plan loaded. What would you like to change?" },
       ]);
@@ -54,6 +60,17 @@ export default function Home() {
       setError(String(e instanceof Error ? e.message : e));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleUnitsChange(next: string) {
+    setUnitsState(next); // optimistic
+    if (!sid) return;
+    try {
+      const res = await setUnits(sid, next);
+      setUnitsState(res.units);
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e));
     }
   }
 
@@ -126,6 +143,13 @@ export default function Home() {
         </div>
 
         <aside className="sidebar">
+          {sid && unitOptions.length > 0 && (
+            <UnitsSelect
+              value={units}
+              options={unitOptions}
+              onChange={handleUnitsChange}
+            />
+          )}
           {visibleLayers.length > 0 && (
             <div className="layers">
               {visibleLayers.map((l) => (

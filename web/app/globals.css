@@ -328,6 +328,33 @@ button:disabled {
   background: var(--ok);
 }
 
+/* units selector */
+.units-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.units-select select {
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  padding: 5px 8px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+}
+.units-select select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
 /* layers strip */
 .layers {
   display: flex;

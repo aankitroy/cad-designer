@@ -75,6 +75,33 @@ def test_undo_endpoint(sample_bytes):
     assert len(list(main.store.get(sid).modelspace())) == before
 
 
+def test_upload_summary_includes_units(sample_bytes):
+    _fresh_store()
+    r = client.post(
+        "/sessions",
+        files={"file": ("plan.dxf", io.BytesIO(sample_bytes), "application/dxf")},
+    )
+    body = r.json()
+    assert body["summary"]["units"] == "m"  # fixture is $INSUNITS=6
+    assert "mm" in body["summary"]["unit_options"]
+
+
+def test_set_units_endpoint(sample_bytes):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    r = client.post(f"/sessions/{sid}/units", json={"units": "mm"})
+    assert r.status_code == 200
+    assert r.json()["units"] == "mm"
+    assert int(main.store.get(sid).header["$INSUNITS"]) == 4  # mm
+
+
+def test_set_units_rejects_unknown(sample_bytes):
+    _fresh_store()
+    sid = main.store.create(sample_bytes)
+    r = client.post(f"/sessions/{sid}/units", json={"units": "furlongs"})
+    assert r.status_code == 422
+
+
 def test_download_dxf(sample_bytes):
     _fresh_store()
     sid = main.store.create(sample_bytes)

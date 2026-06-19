@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { uploadDxf, sendChat } from "../lib/api";
+import { uploadDxf, sendChat, setUnits } from "../lib/api";
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -21,6 +21,15 @@ it("sendChat posts json message", async () => {
   global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
   const res = await sendChat("s1", "move it");
   expect(res.reply).toBe("ok");
+});
+
+it("setUnits posts the chosen units", async () => {
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ units: "mm" }) });
+  const res = await setUnits("s1", "mm");
+  expect(res.units).toBe("mm");
+  const call = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+  expect(call[0]).toContain("/sessions/s1/units");
+  expect(JSON.parse(call[1].body)).toEqual({ units: "mm" });
 });
 
 it("throws on non-ok", async () => {

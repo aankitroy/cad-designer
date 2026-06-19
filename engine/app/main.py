@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from app import units
 from app.agent import run_agent
 from app.query import list_layers
 from app.render import render_svg
@@ -37,13 +38,21 @@ class ChatRequest(BaseModel):
     message: str
 
 
+class UnitsRequest(BaseModel):
+    units: str
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
 
 
 def _summary(doc) -> dict:
-    return {"layers": list_layers(doc)}
+    return {
+        "layers": list_layers(doc),
+        "units": units.current_units(doc),
+        "unit_options": units.UNIT_NAMES,
+    }
 
 
 @app.post("/sessions")
@@ -73,6 +82,18 @@ def chat(sid: str, req: ChatRequest) -> dict:
         "changes": out["changes"],
         "svg": render_svg(store.get(sid)),
     }
+
+
+@app.post("/sessions/{sid}/units")
+def set_units(sid: str, req: UnitsRequest) -> dict:
+    doc = store.get(sid)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Unknown session")
+    try:
+        units.set_units(doc, req.units)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return {"units": units.current_units(doc)}
 
 
 @app.post("/sessions/{sid}/undo")
