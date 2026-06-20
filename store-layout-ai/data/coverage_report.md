@@ -95,5 +95,6 @@
 
 # Round-trip
 
-included=12 skipped=1
+included=11 skipped=2
+- SKIP BASE 3 FP.dxf: 3 column overlaps
 - SKIP BASE 6 FP .dxf: ValueError: no placeable inserts in /Users/aankitroy/Workspace/geoiq/cad-designer/fine-turning/BASE FILES/BASE 6 FP .dxf

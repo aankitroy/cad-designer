@@ -34,11 +34,12 @@ def discover_pairs():
 def build_record(shell_path, fp_path):
     params = derive_params(fp_path)
     struct = skilllib.extract_structure(shell_path)
-    # localize the FP against the SHELL's origin (they often differ) so the target
-    # script lands in the same frame the model is given.
-    origin = struct.get("origin_world")
+    # Localize the FP against its OWN A-WALL min. Shell and FP carry identical wall
+    # geometry but sit at different world coords, so each file's local frame (0-based
+    # from its own A-WALL min) is the SAME frame — using the FP's own origin lands the
+    # furniture inside the shared wall bbox.
     user = f"SHELL:\n{json.dumps(struct)}\n\nPARAMS:\n{json.dumps(params)}"
-    assistant = fp_to_script(fp_path, origin=tuple(origin) if origin else None)
+    assistant = fp_to_script(fp_path)
     return {"messages": [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user},
@@ -56,9 +57,23 @@ def roundtrip_ok(rec, shell_path, out_path):
     except Exception as e:
         return False, f"DXF did not round-trip: {e}"
     struct = skilllib.extract_structure(shell_path)
+    # most fixtures must land inside the wall bbox (catches coordinate-frame errors that
+    # an obstruction-only check would silently pass when furniture is shifted out of bounds)
+    wb = struct.get("wall_bbox")
+    if wb and res.placer.placed:
+        m = 500  # mm margin (a fixture may butt/slightly exceed a wall face)
+        inside = sum(1 for p in res.placer.placed
+                     if p["x0"] >= wb[0] - m and p["x1"] <= wb[2] + m
+                     and p["y0"] >= wb[1] - m and p["y1"] <= wb[3] + m)
+        frac = inside / len(res.placer.placed)
+        if frac < 0.8:
+            return False, f"only {inside}/{len(res.placer.placed)} fixtures inside wall bbox"
     report = skilllib.audit(res.placer, struct)
-    if report["obstruction_hits"]:
-        return False, f"{len(report['obstruction_hits'])} obstruction hits"
+    # Columns are floor-to-ceiling (hard); beams are overhead (BOB >= 2500) so wall/low
+    # fixtures legitimately pass under them — don't reject the expert layout for those.
+    col_hits = [h for h in report["obstruction_hits"] if h[2].startswith("column")]
+    if col_hits:
+        return False, f"{len(col_hits)} column overlaps"
     return True, "ok"
 
 
