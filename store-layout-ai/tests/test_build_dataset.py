@@ -1,5 +1,6 @@
 # tests/test_build_dataset.py
 import os
+import json
 import skilllib
 from data.build_dataset import build_record, roundtrip_ok, discover_pairs
 
@@ -18,7 +19,9 @@ def test_build_record_shape():
     assert roles == ["system", "user", "assistant"]
     assert "SHELL:" in rec["messages"][1]["content"]
     assert "PARAMS:" in rec["messages"][1]["content"]
-    assert "placer.place(" in rec["messages"][2]["content"]
+    cfg = json.loads(rec["messages"][2]["content"])
+    assert isinstance(cfg["placements"], list) and cfg["placements"]
+    assert any(p.get("op") == "place" for p in cfg["placements"])
 
 
 def test_roundtrip_executes(tmp_path):

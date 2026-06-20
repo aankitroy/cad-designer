@@ -5,10 +5,10 @@ import os
 import re
 import skilllib
 from data.rules import SYSTEM_PROMPT
-from data.reverse_engineer import fp_to_script
+from data.reverse_engineer import fp_to_config
 from data.derive_params import derive_params
 from data.block_map import coverage
-from engine.executor import run_script
+from engine.executor import apply_layout
 import ezdxf
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -39,7 +39,7 @@ def build_record(shell_path, fp_path):
     # from its own A-WALL min) is the SAME frame — using the FP's own origin lands the
     # furniture inside the shared wall bbox.
     user = f"SHELL:\n{json.dumps(struct)}\n\nPARAMS:\n{json.dumps(params)}"
-    assistant = fp_to_script(fp_path)
+    assistant = json.dumps(fp_to_config(fp_path))
     return {"messages": [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user},
@@ -48,8 +48,8 @@ def build_record(shell_path, fp_path):
 
 
 def roundtrip_ok(rec, shell_path, out_path):
-    script = rec["messages"][2]["content"]
-    res = run_script(script, shell_path, out_path)
+    config = rec["messages"][2]["content"]
+    res = apply_layout(config, shell_path, out_path)
     if res.error:
         return False, res.error
     try:

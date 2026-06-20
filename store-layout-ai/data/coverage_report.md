@@ -1,14 +1,17 @@
 # Block coverage
 
-## library (42)
+## library (55)
 - 2 seater bench
 - 3 seater Bench 1385
 - 32INCH VC FOR CLINIC
 - AR
 - Billing Counter 1350
+- Billing Counter 1800
+- Billing Counter 2100
 - Billing Counter 900
 - Billing Counter-1350
 - CHAIR UNIT
+- CLENS 1200
 - CLENS 600
 - CLENS 600 TYPE 6
 - CLENS 900
@@ -19,18 +22,25 @@
 - DR STOOL
 - EURO 1040 x 1175
 - GREETR 450x450
+- HALF EURO WITH SHELVES 1040
 - JJ 1200
 - JJ 900
 - JJ SEE THROUGH 900
 - JJ SH 1200
 - JJ SH 900
+- JJ SHD 1010
 - JJ SHD 1200
+- JJ SHD 900
+- JJ STSH 1200
+- JJ STSH 900
 - JJ SUPERHYBRID 1010
 - JJ SUPERHYBRID 1200
 - KEYBOARD
+- LENSOMETER
 - MIC
 - MINGSING
 - MIRROR
+- MIRROR FREE STANDING 300
 - MIRROR SEE THROUGH
 - MOROTISED TABLE-TRIAL SET 950x600
 - PHOROPTER
@@ -43,6 +53,9 @@
 - VC 1200
 - VC HD 1010
 - VC HD 1200
+- WC
+- Wash Basin
+- dsg
 
 ## clinic_room (0)
 
@@ -61,40 +74,235 @@
 - chennai mugappair existignd
 - existignn csk
 
-## unmapped (30)
+## unmapped (200)
+- *U10
+- *U12
+- *U13
+- *U14
+- *U15
+- *U16
+- *U17
+- *U18
+- *U19
+- *U20
+- *U21
+- *U32
+- *U33
+- *U34
+- *U35
+- *U36
+- *U37
+- *U38
+- *U39
 - *U40
 - *U41
+- *U42
+- *U43
 - *U44
 - *U45
 - *U46
+- *U47
+- *U48
+- *U49
 - *U50
 - *U51
 - *U52
+- *U53
 - *U54
+- 3 SEATER BENCH
+- 43INCH
+- 49INCH
+- A$C024159fb
+- A$C050f36e8
+- A$C055de4c3
+- A$C068cc6a0
+- A$C0752b630
 - A$C0b04b9d4
+- A$C12d2271f
 - A$C142a10c7
+- A$C143335a0
 - A$C1635124d
 - A$C1b67bf34
+- A$C1e310292
+- A$C20cc5e3e
+- A$C2242eb7d
+- A$C24899081
+- A$C24c5f99d
+- A$C24c61a65
+- A$C25e89921
+- A$C2698d5b5
+- A$C26c017d8
+- A$C2f5dd23c
+- A$C3279b96f
+- A$C3555d8a6
+- A$C37e1902b
+- A$C3831afab
+- A$C3ba91a74
+- A$C3e620458
+- A$C3f2096d8
+- A$C3fdafdbe
+- A$C40eeda71
+- A$C41066904
+- A$C45bd8f26
 - A$C48d32854
+- A$C49263d40
+- A$C4c1cf22f
+- A$C4c1f3883
+- A$C4f5c871c
+- A$C5049e784
+- A$C50c8a3d0
+- A$C5104be99
+- A$C518d8f74
+- A$C51b338a8
+- A$C52d6eda2
+- A$C547b97a2
+- A$C5521f6e5
+- A$C55405d2e
+- A$C555b74dd
+- A$C5a2c5768
+- A$C5b1beb9a
+- A$C5bd2d32c
+- A$C5bd52c87
+- A$C5c4ce32e
+- A$C5ce18474
+- A$C5cfb5471
+- A$C635e79d1
+- A$C637765b9
+- A$C65946c4b
+- A$C6595be2a
+- A$C65ba2408
+- A$C6784298c
+- A$C68f6a2d5
+- A$C69cec98d
 - A$C6b330860
+- A$C6b5fe4c9
+- A$C6d6d0015
 - A$C6fa91473
+- A$C7088fc7a
+- A$C72038f08
+- A$C72675485
 - A$C75d7f579
+- A$C7768cef6
+- A$C77818510
+- A$C786b5c82
+- A$C789c81e5
+- A$C79d33211
 - A$C7ffe30e6
+- A$C8114a132
+- A$C824ec3f2
+- A$C833728e1
+- A$C833c02ab
+- A$C85344c99
+- A$C86e1028f
+- A$C87ab3381
+- A$C88363049
+- A$C89a4e9da
+- A$C89c76cf7
+- A$C8bb5669a
+- A$C8d798a6e
+- A$C8e6e9e5d
+- A$C917db70c
+- A$C929adc24
 - A$C938eadad
+- A$C94e56fbd
 - A$C956eeea6
+- A$C95718fd3
+- A$C97deccbb
 - A$C989cf251
+- A$C9998eee8
+- A$C9ae9df43
+- A$C9f357b42
+- A$Ca052e964
+- A$Ca0c27ec0
+- A$Ca0fa8df8
+- A$Ca1a97255
+- A$Ca3f29414
 - A$Ca58c3b23
+- A$Ca5f26b73
+- A$Ca642a34f
+- A$Ca6a6fadd
+- A$Ca786b161
+- A$Ca95fa84c
+- A$Cabfd0693
 - A$Cac3a86fe
+- A$Cb24cf00b
+- A$Cb3306c25
+- A$Cb4ac870e
+- A$Cbb8c257c
 - A$Cbc15f9d8
+- A$Cbfece080
+- A$Cc3cf2737
+- A$Cc7330e11
 - A$Cc7694f99
+- A$Cc7f33e8b
+- A$Cc8652d2b
+- A$Cc899b642
 - A$Cc8bc48d2
+- A$Cca189d2b
+- A$Cca4fbe6c
+- A$Ccaeba2c0
+- A$Ccbeffd58
 - A$Ccc8ceeb6
+- A$Cd41a28a2
+- A$Cd4c29eb0
+- A$Cd7686a59
+- A$Cd80e5814
+- A$Cdad72558
 - A$Cdce450af
 - A$Cdd6ceb42
+- A$Ce17e40e3
+- A$Ce1b0a12a
 - A$Ce31a1afc
+- A$Ce3c081f2
+- A$Ce45749d8
+- A$Ce6322096
+- A$Ce8050de2
+- A$Ce8b6d310
+- A$Ce9b19e40
+- A$Ce9e9bd8f
+- A$Cea566534
+- A$Ceb5d2849
+- A$Cec5670a9
+- A$Ced17bd27
+- A$Ced2d732d
+- A$Ced7cbed3
+- A$Cf1aa3ac2
+- A$Cf23987e7
+- A$Cf267f9f8
+- A$Cf9dbe60f
+- A$Cfa4c734a
+- A$Cfb444397
+- A$Cfdc648c5
+- D-TABLE-1200
+- wall fan
 
 # Round-trip
 
-included=11 skipped=2
+included=119 skipped=27
+- SKIP BASE 100 FP.dxf: 24 column overlaps
+- SKIP BASE 109 FP.dxf: 40 column overlaps
+- SKIP BASE 112 FP.dxf: 51 column overlaps
+- SKIP BASE 113 FP.dxf: 47 column overlaps
+- SKIP BASE 114 FP.dxf: 50 column overlaps
+- SKIP BASE 116 FP.dxf: 22 column overlaps
+- SKIP BASE 117 FP.dxf: only 33/66 fixtures inside wall bbox
+- SKIP BASE 121 FP.dxf: only 44/58 fixtures inside wall bbox
+- SKIP BASE 148 FP.dxf: only 22/50 fixtures inside wall bbox
+- SKIP BASE 16 FP.dxf: 8 column overlaps
+- SKIP BASE 20 FP.dxf: 1 column overlaps
+- SKIP BASE 22 FP.dxf: 1 column overlaps
+- SKIP BASE 25 FP.dxf: 3 column overlaps
+- SKIP BASE 27 FP.dxf: 1 column overlaps
 - SKIP BASE 3 FP.dxf: 3 column overlaps
-- SKIP BASE 6 FP .dxf: ValueError: no placeable inserts in /Users/aankitroy/Workspace/geoiq/cad-designer/fine-turning/BASE FILES/BASE 6 FP .dxf
+- SKIP BASE 34 FP.dxf: only 31/43 fixtures inside wall bbox
+- SKIP BASE 37 FP.dxf: 1 column overlaps
+- SKIP BASE 42 FP.dxf: 36 column overlaps
+- SKIP BASE 46 FP.dxf: 3 column overlaps
+- SKIP BASE 53 FP.dxf: 36 column overlaps
+- SKIP BASE 6 FP .dxf: ValueError: no placeable inserts in /Users/aankitroy/Workspace/geoiq/cad-designer/fine-tuning/BASE FILES/BASE 6 FP .dxf
+- SKIP BASE 68 FP.dxf: only 21/46 fixtures inside wall bbox
+- SKIP BASE 87 FP.dxf: 2 column overlaps
+- SKIP BASE 91 FP.dxf: 3 column overlaps
+- SKIP BASE 93 FP.dxf: 1 column overlaps
+- SKIP BASE 96 FP.dxf: 1 column overlaps
+- SKIP BASE 97 FP.dxf: 50 column overlaps
