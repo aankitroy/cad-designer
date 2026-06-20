@@ -39,7 +39,10 @@ def build_record(shell_path, fp_path):
     # from its own A-WALL min) is the SAME frame — using the FP's own origin lands the
     # furniture inside the shared wall bbox.
     user = f"SHELL:\n{json.dumps(struct)}\n\nPARAMS:\n{json.dumps(params)}"
-    assistant = json.dumps(fp_to_config(fp_path))
+    # Compact the assistant target (no spaces after , or :) — ~17% fewer tokens so full
+    # layouts fit under max-seq-length without truncation. The user prompt stays spaced to
+    # match what agent.build_user_prompt emits at inference (no train/inference drift).
+    assistant = json.dumps(fp_to_config(fp_path), separators=(",", ":"))
     return {"messages": [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user},

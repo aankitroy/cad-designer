@@ -1,6 +1,9 @@
 lora_parameters:
   rank: 16
-  alpha: 32
+  # mlx_lm applies `scale` as the direct LoRA multiplier (its default is 20.0), unlike
+  # PEFT's alpha/rank convention. 20.0 is the well-tested mlx_lm value and gives the
+  # strong adaptation this from-scratch domain task needs.
+  scale: 20.0
   dropout: 0.05
   keys:
     - self_attn.q_proj

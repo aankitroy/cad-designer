@@ -10,7 +10,9 @@ python -m mlx_lm.lora \
   --num-layers 8 \
   --learning-rate 5e-5 \
   --optimizer adamw \
-  --max-seq-length 2048 \
+  --mask-prompt \
+  --max-seq-length 5120 \
+  --grad-checkpoint \
   --clear-cache-threshold 0.8 \
   --steps-per-eval 50 \
   --val-batches 2 \

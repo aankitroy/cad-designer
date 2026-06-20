@@ -36,6 +36,12 @@ _REQUIRED = {
     "fire": ("x", "y"),
 }
 
+# Best-effort inspection: blocks that can't actually be placed (banned or not in the
+# library) are drawn as a labelled marker box so the model's spatial intent is still
+# visible in the DXF/PNG, even though the layout is rejected.
+PLACEHOLDER_LAYER = "LK-REJECTED"
+PLACEHOLDER_W, PLACEHOLDER_H = 800, 400
+
 
 def _extract_json(text):
     """Body of a ```json fence if present (closing fence optional, handles truncation),
@@ -101,6 +107,19 @@ def _valid_op(p):
         and all(k in p for k in _REQUIRED[p["op"]])
 
 
+def _placeholder(placer, p, reason, warnings):
+    """Draw a labelled marker box at the op's intended position so a rejected/unplaceable
+    block still shows up in the render. Never raises into the caller."""
+    try:
+        x, y = int(p.get("x", 0)), int(p.get("y", 0))
+        placer.rect(x, y, x + PLACEHOLDER_W, y + PLACEHOLDER_H, layer=PLACEHOLDER_LAYER)
+        placer.txt(f"?{p.get('block', p.get('op', '?'))}", x + 20, y + PLACEHOLDER_H + 40,
+                   90, layer=PLACEHOLDER_LAYER)
+        warnings.append(f"placeholder for {p.get('block', p.get('op'))} @({x},{y}): {reason[:60]}")
+    except Exception as e:  # noqa: BLE001 - placeholder is best-effort, must not abort the build
+        warnings.append(f"placeholder failed: {str(e)[:60]}")
+
+
 def _dispatch(placer, p):
     op = p["op"]
     if op == "place":
@@ -120,10 +139,15 @@ def _check_banned_ops(placements):
     return None
 
 
-def apply_layout(config_text, shell_path, out_path):
+def apply_layout(config_text, shell_path, out_path, best_effort=False):
     """Parse a JSON layout config and build the DXF deterministically (no exec).
     Malformed entries are skipped (recorded in warnings); only a banned block or an
-    empty/garbled config is a hard error."""
+    empty/garbled config is a hard error.
+
+    best_effort=True: build and save the DXF anyway so a rejected layout can be
+    inspected. Banned/unplaceable blocks become labelled placeholder markers; the
+    strict rejection reason is still reported in `.error` (with `.doc`/`.placer`
+    populated), so callers can both flag the failure and open the result."""
     try:
         placements, warnings = parse_config(config_text)
     except Exception as e:
@@ -135,24 +159,32 @@ def apply_layout(config_text, shell_path, out_path):
             valid.append(p)
         else:
             warnings.append(f"skipped invalid op: {str(p)[:80]}")
-    if not valid:
+    if not valid and not best_effort:
         return ExecResult(error="no valid placements in config", dxf_path=None,
                           placer=None, doc=None, warnings=warnings)
     banned = _check_banned_ops(valid)
-    if banned:
+    if banned and not best_effort:
         return ExecResult(error=banned, dxf_path=None, placer=None, doc=None, warnings=warnings)
+    banned_names = {b.upper() for b in BANNED_BLOCKS}
     try:
         doc, msp, OX, OY = skilllib.load_shell(shell_path)
         skilllib.import_library(doc)
         skilllib.import_clinic_rooms(doc)
         placer = _Placer(doc, msp, OX, OY)
         for p in valid:
+            if best_effort and p.get("op") == "place" \
+                    and str(p.get("block", "")).upper() in banned_names:
+                _placeholder(placer, p, "banned block", warnings)
+                continue
             try:
                 _dispatch(placer, p)
             except Exception as e:
                 warnings.append(f"op {p.get('op')} failed: {str(e)[:80]}")
+                if best_effort:
+                    _placeholder(placer, p, str(e), warnings)
         doc.saveas(out_path)
-        return ExecResult(error=None, dxf_path=out_path, placer=placer, doc=doc, warnings=warnings)
+        error = banned if (banned and best_effort) else None
+        return ExecResult(error=error, dxf_path=out_path, placer=placer, doc=doc, warnings=warnings)
     except Exception:
         return ExecResult(error=traceback.format_exc(limit=4), dxf_path=None,
                           placer=None, doc=None, warnings=warnings)
