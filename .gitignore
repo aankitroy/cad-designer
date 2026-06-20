@@ -7,5 +7,4 @@ __pycache__/
 .env.local
 .DS_Store
 store-layout-ai/finetune/*.log
-fine-tuning/BASE FILES/
 lenskart-store-design/assets/
