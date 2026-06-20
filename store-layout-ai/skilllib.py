@@ -7,7 +7,7 @@ REPO = os.path.dirname(HERE)
 SKILL = os.path.join(REPO, "lenskart-store-design")
 SCRIPTS = os.path.join(SKILL, "scripts")
 ASSETS = os.path.join(SKILL, "assets")
-BASE_FILES = os.path.join(REPO, "fine-turning", "BASE FILES")
+BASE_FILES = os.path.join(REPO, "fine-tuning", "BASE FILES")
 
 if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
