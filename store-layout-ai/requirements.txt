@@ -1,0 +1,6 @@
+ezdxf>=1.1
+matplotlib>=3.7
+fastapi>=0.110
+uvicorn>=0.27
+python-multipart>=0.0.9
+pytest>=8.0

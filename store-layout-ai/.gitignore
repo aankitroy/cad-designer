@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+_jobs/
+_rt.dxf
+finetune/adapters/
+finetune/models/
+.pytest_cache/
