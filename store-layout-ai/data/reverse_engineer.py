@@ -70,3 +70,43 @@ def fp_to_script(fp_path, origin=None):
     if placed == 0:
         raise ValueError(f"no placeable inserts in {fp_path}")
     return "```python\n" + "\n".join(lines) + "\n```"
+
+
+def fp_to_config(fp_path, origin=None):
+    """Same geometry as fp_to_script, emitted as a layout config dict
+    {"placements": [...]} of place/rect/fire ops instead of a Python script."""
+    doc, msp, OX, OY = skilllib.load_shell(fp_path)
+    if origin is not None:
+        OX, OY = origin
+    struct = skilllib.extract_structure(fp_path)
+    wb = struct.get("wall_bbox") or (0, 0, 1, 1)
+    wall_h = max(1, wb[3] - wb[1])
+
+    placements, placed = [], 0
+    for e in msp.query("INSERT"):
+        name = e.dxf.name
+        kind, target = classify(name)
+        if kind == "skip":
+            continue
+        box = _local_bbox(e, OX, OY)
+        if box is None:
+            continue
+        x0, y0, x1, y1 = box
+        rot = round(e.dxf.rotation or 0)
+        if kind in ("library", "clinic_room"):
+            placements.append({"op": "place", "block": target, "x": x0, "y": y0,
+                               "rot": rot, "zone": _zone_comment(y0, wall_h)})
+            placed += 1
+        elif kind == "fire":
+            placements.append({"op": "fire", "x": (x0 + x1) // 2, "y": (y0 + y1) // 2})
+        elif kind == "substitute":
+            placements.append({"op": "rect", "x0": x0, "y0": y0, "x1": x1, "y1": y1,
+                               "layer": target["layer"], "label": target["label"]})
+        else:  # unmapped anonymous block
+            if (x1 - x0) > STORE_SCALE or (y1 - y0) > STORE_SCALE:
+                continue
+            placements.append({"op": "rect", "x0": x0, "y0": y0, "x1": x1, "y1": y1,
+                               "layer": "LK-FURNITURE"})
+    if placed == 0:
+        raise ValueError(f"no placeable inserts in {fp_path}")
+    return {"placements": placements}
