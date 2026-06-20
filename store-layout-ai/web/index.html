@@ -1,0 +1,48 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Lenskart Layout Agent</title>
+<style>
+ body{font:15px system-ui;margin:2rem auto;max-width:760px;color:#eee;background:#1b1b1b}
+ fieldset{border:1px solid #444;border-radius:8px;margin:1rem 0;padding:1rem}
+ label{display:inline-block;width:9rem} input,button{padding:.4rem;margin:.2rem 0}
+ button{background:#2d7;border:0;border-radius:6px;cursor:pointer;font-weight:600}
+ #preview{max-width:100%;border:1px solid #444;border-radius:8px;margin-top:1rem}
+ .row{margin:.3rem 0}
+</style></head><body>
+<h1>Lenskart Store Layout Agent</h1>
+<fieldset><legend>1 · Base shell</legend>
+  <input type="file" id="shell" accept=".dxf">
+  <button onclick="deriveParams()">Auto-derive params</button>
+</fieldset>
+<fieldset><legend>2 · Parameters</legend>
+  <div class="row"><label>Clinic count</label><input id="clinic_count" type="number" value="2"></div>
+  <div class="row"><label>Target fixtures</label><input id="target_fixtures" type="number" value="19"></div>
+  <div class="row"><label>Entry side</label><input id="entry_side" value="west"></div>
+  <div class="row"><label>Premium side</label><input id="premium_side" value="south"></div>
+</fieldset>
+<fieldset><legend>3 · Generate</legend>
+  <button onclick="runDesign()">Design layout</button>
+  <p id="status"></p>
+  <img id="preview" style="display:none">
+  <p><a id="dl" style="display:none;color:#2d7">⬇ Download DXF</a></p>
+</fieldset>
+<script>
+const $=id=>document.getElementById(id);
+async function deriveParams(){
+  const fd=new FormData(); fd.append("shell",$("shell").files[0]);
+  const r=await fetch("/derive",{method:"POST",body:fd}); const p=await r.json();
+  for(const k of ["clinic_count","target_fixtures","entry_side","premium_side"]) $(k).value=p[k];
+  $("status").textContent="Params derived.";
+}
+async function runDesign(){
+  $("status").textContent="Designing… (self-repair up to 3 attempts)";
+  const fd=new FormData(); fd.append("shell",$("shell").files[0]);
+  for(const k of ["clinic_count","target_fixtures","entry_side","premium_side"]) fd.append(k,$(k).value);
+  const r=await fetch("/design",{method:"POST",body:fd}); const res=await r.json();
+  $("status").textContent=`${res.ok?"OK":"FAILED"} · attempt ${res.attempts} · `+
+    (res.audit?res.audit.checks.map(c=>c.check+":"+c.status).join("  "):res.error||"");
+  if(res.job_id){
+    $("preview").src=`/design/${res.job_id}/png?t=`+Date.now(); $("preview").style.display="block";
+    $("dl").href=`/design/${res.job_id}/dxf`; $("dl").style.display="inline";
+  }
+}
+</script></body></html>
