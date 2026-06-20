@@ -1,14 +1,17 @@
 # tests/test_agent.py
 import os
+import json
 import skilllib
 from engine.agent import design
 
 
 def fake_generate_ok(system, user):
-    return ("```python\n"
-            "placer.place('EURO 1040 x 1175', x=2000, y=1500, rot=0)\n"
-            "placer.fire(500, 500)\nplacer.fire(2000, 2000)\nplacer.fire(3500, 3500)\n"
-            "```")
+    return json.dumps({"placements": [
+        {"op": "place", "block": "EURO 1040 x 1175", "x": 2000, "y": 1500, "rot": 0},
+        {"op": "fire", "x": 500, "y": 500},
+        {"op": "fire", "x": 2000, "y": 2000},
+        {"op": "fire", "x": 3500, "y": 3500},
+    ]})
 
 
 def test_design_success(tiny_shell, tmp_path):
@@ -28,7 +31,8 @@ def test_design_self_repairs(tiny_shell, tmp_path):
     def flaky(system, user):
         calls["n"] += 1
         if calls["n"] == 1:
-            return "```python\nplacer.place('EURO 1040 x 1175', x=2000, y=0)\n```"  # on column → FAIL
+            return json.dumps({"placements": [
+                {"op": "place", "block": "EURO 1040 x 1175", "x": 2000, "y": 0}]})  # on column → FAIL
         return fake_generate_ok(system, user)
 
     res = design(tiny_shell, {"clinic_count": 2, "target_fixtures": 1,
