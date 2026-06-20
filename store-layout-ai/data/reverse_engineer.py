@@ -29,8 +29,13 @@ def _zone_comment(y0, wall_h):
     return "mid retail"
 
 
-def fp_to_script(fp_path):
+def fp_to_script(fp_path, origin=None):
+    """Build the script from the FP's INSERTs in LOCAL coords. If `origin` (the SHELL's
+    A-WALL min, as (OX, OY)) is given, localize against it — the shell and FP often have
+    different A-WALL extents, and the script must land in the SHELL's frame."""
     doc, msp, OX, OY = skilllib.load_shell(fp_path)
+    if origin is not None:
+        OX, OY = origin
     struct = skilllib.extract_structure(fp_path)
     wb = struct.get("wall_bbox") or (0, 0, 1, 1)
     wall_h = max(1, wb[3] - wb[1])
